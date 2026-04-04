@@ -8,7 +8,7 @@ from .audio import (
 )
 from .assessment import (
     IELTSAssessmentResult,
-    BandScore,
+    BandScores,
     LexicalAnalysis,
     GrammarAnalysis,
 )
@@ -19,7 +19,7 @@ __all__ = [
     "AzurePronunciationResult",
     "PhonemeDetail",
     "IELTSAssessmentResult",
-    "BandScore",
+    "BandScores",
     "LexicalAnalysis",
     "GrammarAnalysis",
 ]

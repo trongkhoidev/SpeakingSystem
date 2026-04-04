@@ -1,9 +1,8 @@
 """Utilities for backend."""
 
-from .supabase_utils import SupabaseClient, save_assessment_result, save_audio_recording
+from .security import create_access_token, decode_access_token
 
 __all__ = [
-    "SupabaseClient",
-    "save_assessment_result",
-    "save_audio_recording",
+    "create_access_token",
+    "decode_access_token",
 ]

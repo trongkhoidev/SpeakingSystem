@@ -1,19 +1,25 @@
+"""Test session management service."""
+
 from sqlalchemy.orm import Session
-from app.models.sqlalchemy_models import TestSession, Question, Answer
+from app.models.sqlalchemy_models import TestSession, TestAnswer, Question
+from app.models.schemas import TestSessionCreate
 import uuid
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import func
 from app.services.scoring_service import ScoringService
 
+
 class TestService:
     @staticmethod
-    def create_session(db: Session, user_id: str, mode: str, config: dict = None) -> TestSession:
+    def create_session(db: Session, user_id: str, config: TestSessionCreate) -> TestSession:
+        """Create a new test session."""
         session = TestSession(
             user_id=user_id,
-            mode=mode,
-            config=config,
-            is_completed=False
+            examiner_voice=config.examiner_voice,
+            question_count=config.question_count,
+            follow_up_enabled=config.follow_up_enabled,
+            parts_included=config.parts_included,
         )
         db.add(session)
         db.commit()
@@ -21,85 +27,72 @@ class TestService:
         return session
 
     @staticmethod
-    def get_test_questions(db: Session, mode: str, config: dict = None) -> List[Question]:
-        question_count = config.get("questionCount", 5) if config else 5
+    def get_test_questions(db: Session, config: TestSessionCreate) -> List[Question]:
+        """Get questions for a test based on config."""
+        question_count = config.question_count or 5
+        parts = config.parts_included
         
-        if mode == "part1":
-            return db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(question_count).all()
-        elif mode == "part2":
-            return db.query(Question).filter(Question.part == 2).order_by(func.random()).limit(1).all()
-        elif mode == "part3":
-            return db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(question_count).all()
-        elif mode == "full":
+        # If no specific parts, do full test
+        if not parts:
             p1 = db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(question_count).all()
             p2 = db.query(Question).filter(Question.part == 2).order_by(func.random()).limit(1).all()
             p3 = db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(question_count).all()
             return p1 + p2 + p3
-        return []
+        
+        # Single part
+        return db.query(Question).filter(Question.part == parts).order_by(func.random()).limit(question_count).all()
 
     @staticmethod
-    def complete_session(db: Session, session_id: str) -> TestSession:
+    def complete_session(db: Session, session_id: str) -> Optional[TestSession]:
+        """Mark a test session as complete and calculate overall score."""
         session = db.query(TestSession).filter(TestSession.id == session_id).first()
         if not session:
             return None
         
-        answers = db.query(Answer).filter(Answer.session_id == session_id).all()
+        answers = db.query(TestAnswer).filter(TestAnswer.test_session_id == session_id).all()
         if answers:
-            # Average the overall bands
-            valid_answers = [a for a in answers if a.band_overall is not None]
+            valid_answers = [a for a in answers if a.overall_band is not None]
             if valid_answers:
-                total_band = sum(a.band_overall for a in valid_answers)
+                total_band = sum(float(a.overall_band) for a in valid_answers)
                 average_band = total_band / len(valid_answers)
                 session.overall_band = ScoringService._round_ielts(average_band)
         
-        session.is_completed = True
-        session.completed_at = datetime.utcnow()
+        session.completed_at = datetime.utcnow().isoformat()
         db.commit()
         db.refresh(session)
         return session
 
     @staticmethod
     def get_session_report(db: Session, session_id: str):
+        """Build a detailed test report."""
         session = db.query(TestSession).filter(TestSession.id == session_id).first()
         if not session:
             return None
         
-        answers = db.query(Answer).options().filter(Answer.session_id == session_id).all()
+        answers = db.query(TestAnswer).filter(TestAnswer.test_session_id == session_id).all()
         
         results = []
         for answer in answers:
-            feedback = "No feedback available"
-            if answer.feedback_json:
-                if isinstance(answer.feedback_json, dict):
-                    feedback = answer.feedback_json.get("general_feedback", "No feedback available")
-                else:
-                    feedback = str(answer.feedback_json)
-
             results.append({
                 "id": answer.id,
-                "question": answer.question.text,
-                "part": answer.question.part,
-                "overall_band": answer.band_overall,
-                "scores": {
-                    "fc": answer.band_fc,
-                    "lr": answer.band_lr,
-                    "gra": answer.band_gra,
-                    "pron": answer.band_pron
-                },
-                "feedback": feedback
+                "question": answer.question.question_text if answer.question else "N/A",
+                "part": answer.part_number or (answer.question.part if answer.question else None),
+                "overall_band": float(answer.overall_band) if answer.overall_band else None,
+                "feedback": answer.llm_result
             })
             
         return {
             "id": session.id,
-            "date": session.created_at.strftime("%Y-%m-%d"),
-            "overallBand": session.overall_band,
-            "type": session.mode.capitalize(),
+            "date": str(session.started_at),
+            "overallBand": float(session.overall_band) if session.overall_band else None,
+            "type": "Full Test",
             "results": results
         }
 
     @staticmethod
     def get_user_test_history(db: Session, user_id: str):
+        """Get completed test sessions for a user."""
         return db.query(TestSession).filter(
             TestSession.user_id == user_id,
-            TestSession.is_completed == True
-        ).order_by(TestSession.created_at.desc()).all()
+            TestSession.completed_at.isnot(None)
+        ).order_by(TestSession.started_at.desc()).all()

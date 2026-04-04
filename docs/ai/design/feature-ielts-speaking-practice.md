@@ -24,6 +24,7 @@ graph TD
     subgraph "Backend - Python FastAPI"
         API["REST API Gateway"]
         Auth["Google OAuth + JWT"]
+        GK["Stage 0: Gatekeeper"]
         AZ["Stage 1: Azure Pronunciation"]
         LLM["Stage 2: Gemini Analysis"]
         Scoring["Scoring Engine"]
@@ -63,6 +64,7 @@ graph TD
 | **Frontend** | UI rendering, audio capture, real-time visualization | React 19, Vite, TailwindCSS, Recharts |
 | **Backend API** | Audio processing, orchestration of AI pipeline | Python FastAPI, asyncio |
 | **Auth** | Google OAuth login, JWT session management | `authlib`, `python-jose` |
+| **Gatekeeper** | Stage 0: Relevance/off-topic check before expensive AI calls | Gemini embeddings + cosine similarity |
 | **Azure Speech** | Pronunciation assessment (4 factors) | Azure SDK `azure-cognitiveservices-speech` |
 | **Deepgram** | Real-time live transcription | Deepgram Nova-3 WebSocket |
 | **LLM Service** | Linguistic analysis (FC, LR, GRA) + "Explain more" | Gemini 2.0 Flash |
@@ -226,30 +228,27 @@ erDiagram
 #### `llm_result` (from Gemini)
 ```json
 {
-  "fluency_coherence": {
-    "band": 7.0,
-    "reasoning": "Bạn sử dụng tốt các từ nối...",
-    "strengths": ["Dùng 'Moreover' tự nhiên"],
-    "improvements": ["Cần thêm discourse markers"],
-    "errors": []
+  "FC": {
+    "score": 7.0,
+    "feedback": "Bạn sử dụng tốt các từ nối... (Vietnamese feedback)",
+    "key_findings": ["Dùng 'Moreover' tự nhiên", "Cần thêm discourse markers"]
   },
-  "lexical_resource": {
-    "band": 6.5,
-    "reasoning": "Từ vựng khá đa dạng nhưng...",
-    "strengths": [],
-    "improvements": [],
-    "errors": []
+  "LR": {
+    "score": 6.5,
+    "feedback": "Từ vựng khá đa dạng nhưng... (Vietnamese feedback)",
+    "band_8_plus_words": ["consequently", "indispensable"]
   },
-  "grammatical_accuracy": {
-    "band": 7.0,
-    "reasoning": "Sử dụng câu phức tốt...",
-    "strengths": [],
-    "improvements": [],
-    "errors": []
+  "GRA": {
+    "score": 7.0,
+    "feedback": "Sử dụng câu phức tốt... (Vietnamese feedback)",
+    "error_types": ["subject-verb agreement"],
+    "complexity": "Advanced"
   },
   "model_answer": "To be honest, I genuinely enjoy my studies..."
 }
 ```
+
+> **Key mapping:** `FC` = Fluency & Coherence, `LR` = Lexical Resource, `GRA` = Grammatical Range & Accuracy. These abbreviated keys match the `BandScores` Pydantic model aliases and frontend `ReasoningCards` component.
 
 #### `word_details` (merged for UI rendering)
 ```json
@@ -330,31 +329,40 @@ Fields:
 ### Main Assessment Response
 ```json
 {
-  "id": "answer-uuid",
+  "question_id": "question-uuid",
+  "user_id": "google-sub-id",
+  "timestamp": "2026-04-04T09:00:00Z",
+  "student_transcript": "Honestly, I really like my studies...",
+  "is_relevant": true,
+  "relevance_score": 95,
+  "audio_url": "user-id/answer-id.wav",
   "overall_band": 7.0,
-  "transcript": "Honestly, I really like my studies...",
-  "audio_url": "https://blob.../user-id/answer-id.wav",
-  "azure": {
+  "band_scores": {
+    "FC": 7.0,
+    "LR": 6.5,
+    "GRA": 7.0,
+    "PRON": 7.5
+  },
+  "azure_pronunciation": {
     "accuracy_score": 88.5,
     "fluency_score": 82.0,
     "completeness_score": 95.0,
     "prosody_score": 79.5
   },
-  "bands": {
-    "fluency_coherence": 7.0,
-    "lexical_resource": 6.5,
-    "grammatical_accuracy": 7.0,
-    "pronunciation": 7.5
+  "feedback_json": {
+    "FC": { "score": 7.0, "feedback": "Vietnamese feedback...", "key_findings": ["...", "..."] },
+    "LR": { "score": 6.5, "feedback": "Vietnamese feedback...", "band_8_plus_words": ["consequently", "indispensable"] },
+    "GRA": { "score": 7.0, "feedback": "Vietnamese feedback...", "error_types": ["subject-verb agreement"], "complexity": "Advanced" },
+    "model_answer": "A high-scoring (Band 8.5+) version of this answer..."
   },
-  "reasoning": {
-    "fluency_coherence": { "band": 7.0, "reasoning": "...", ... },
-    "lexical_resource": { "band": 6.5, "reasoning": "...", ... },
-    "grammatical_accuracy": { "band": 7.0, "reasoning": "...", ... }
-  },
-  "word_details": [ ... ],
-  "model_answer": "..."
+  "color_coded_transcript": [
+    { "word": "honestly", "color": "green", "accuracy_score": 92.0, "error_type": null, "phonemes": [...] },
+    { "word": "studies", "color": "amber", "accuracy_score": 72.0, "error_type": "Mispronunciation", "phonemes": [...] }
+  ]
 }
 ```
+
+> **Note:** `band_scores` uses abbreviated keys (`FC`, `LR`, `GRA`, `PRON`) as aliases for `fluency_coherence`, `lexical_resource`, `grammatical_accuracy`, `pronunciation`. The Pydantic model supports both via `populate_by_name = True`.
 
 ### Explain More Request/Response
 ```
