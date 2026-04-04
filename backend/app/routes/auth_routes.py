@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from authlib.jose import jwt, JWTError
+from authlib.jose import jwt
 import httpx
 import logging
 from typing import Any, Dict, Optional
