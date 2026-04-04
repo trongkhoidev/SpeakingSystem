@@ -2,7 +2,7 @@
 
 import asyncio
 import aiohttp
-from typing import Optional
+from typing import Optional, Dict, Any
 from app.models.assessment import LexicalAnalysis, GrammarAnalysis
 from app.core.config import settings
 import json
@@ -177,10 +177,66 @@ Return as JSON with keys: score, feedback, error_count, error_types, complexity_
                 "model_answer": "N/A"
             }
 
-    async def _call_gemini_stage2(self, prompt: str) -> Dict[str, Any]:
-        """Call Google Gemini 1.5 Flash for Stage 2."""
+    async def explain_more(
+        self,
+        criterion: str,
+        original_reasoning: str,
+        transcript: str
+    ) -> Dict[str, Any]:
+        """
+        Generate a deeper AI explanation for a specific IELTS criterion.
+        Returns Vietnamese explanation with examples and suggestions.
+        """
         
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        criterion_map = {
+            "fluency_coherence": "Fluency & Coherence (FC)",
+            "lexical_resource": "Lexical Resource (LR)",
+            "grammatical_accuracy": "Grammatical Range & Accuracy (GRA)",
+            "pronunciation": "Pronunciation"
+        }
+        
+        criterion_name = criterion_map.get(criterion, criterion)
+        
+        prompt = f"""
+        Bạn là một chuyên gia IELTS Speaking. Hãy phân tích chi tiết hơn về tiêu chí "{criterion_name}" cho câu trả lời sau.
+
+        ### Câu trả lời của thí sinh:
+        "{transcript}"
+
+        ### Nhận xét ban đầu:
+        "{original_reasoning}"
+
+        ### YÊU CẦU:
+        Hãy cung cấp phân tích sâu hơn bằng tiếng Việt, bao gồm:
+        1. Giải thích chi tiết tại sao thí sinh được chấm điểm như vậy
+        2. Ví dụ cụ thể từ bài nói (Do / Don't)
+        3. Gợi ý cụm từ/cấu trúc nên dùng để cải thiện
+
+        Trả về JSON:
+        {{
+            "detailed_explanation": "Phân tích chi tiết...",
+            "examples": ["Do: ...", "Don't: ..."],
+            "suggested_phrases": ["However, ...", "Moreover, ..."]
+        }}
+        """
+        
+        try:
+            if self.provider == "gemini":
+                return await self._call_gemini_stage2(prompt)
+            else:
+                return await self._call_openai_stage2(prompt)
+        except Exception as e:
+            logger.error(f"Explain more failed: {str(e)}")
+            return {
+                "detailed_explanation": "Không thể tạo phân tích chi tiết lúc này. Vui lòng thử lại.",
+                "examples": [],
+                "suggested_phrases": []
+            }
+
+    async def _call_gemini_stage2(self, prompt: str) -> Dict[str, Any]:
+        """Call Google Gemini 2.0 Flash for Stage 2."""
+        
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
         
         params = {"key": self.gemini_key}
         payload = {

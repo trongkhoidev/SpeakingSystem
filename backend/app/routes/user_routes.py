@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+"""User routes — dashboard data and practice history."""
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import Any, Dict, List, Optional
 from ..core.database import get_db
 from ..routes.auth_routes import get_current_user
-from ..models.sqlalchemy_models import User, Answer, Question
+from ..models.sqlalchemy_models import User, PracticeAnswer, Question
 from ..services.dashboard_service import DashboardService
 
 router = APIRouter(prefix="/user", tags=["user"])
+
 
 @router.get("/dashboard", response_model=Dict[str, Any])
 async def get_dashboard_data(
@@ -32,26 +35,30 @@ async def get_dashboard_data(
             detail=f"Failed to fetch dashboard: {str(e)}"
         )
 
+
 @router.get("/history", response_model=List[Dict[str, Any]])
 async def get_user_history(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    limit: int = 20
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0)
 ):
-    """Fetch recent practice history for the user."""
+    """Fetch recent practice history for the user with pagination."""
     
     try:
-        answers = db.query(Answer).join(Question).filter(
-            Answer.user_id == current_user.id
-        ).order_by(desc(Answer.created_at)).limit(limit).all()
+        answers = db.query(PracticeAnswer).join(
+            Question, PracticeAnswer.question_id == Question.id
+        ).filter(
+            PracticeAnswer.session.has(user_id=current_user.id)
+        ).order_by(desc(PracticeAnswer.created_at)).offset(offset).limit(limit).all()
         
         return [
             {
                 "id": str(a.id),
-                "question_text": a.question.text,
-                "overall_band": a.band_overall,
-                "created_at": a.created_at.isoformat(),
-                "part": a.question.part
+                "question_text": a.question.question_text if a.question else "Custom question",
+                "overall_band": float(a.overall_band) if a.overall_band else None,
+                "created_at": str(a.created_at),
+                "part": a.question.part if a.question else None
             }
             for a in answers
         ]

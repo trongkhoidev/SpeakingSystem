@@ -37,16 +37,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     
-    # Supabase
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
-    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
-    
     # Azure SQL
-    DB_SERVER: str = os.getenv("DB_SERVER", "speakingsystem.database.windows.net")
-    DB_NAME: str = os.getenv("DB_NAME", "lexilearn")
-    DB_USER: str = os.getenv("DB_USER", "trongkhoidev")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "@Speakingsystem")
+    DB_SERVER: str = os.getenv("DB_SERVER", "")
+    DB_NAME: str = os.getenv("DB_NAME", "")
+    DB_USER: str = os.getenv("DB_USER", "")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
     DB_DRIVER: str = os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server")
     
     @property
@@ -60,9 +55,9 @@ class Settings(BaseSettings):
     GOOGLE_CONF_URL: str = "https://accounts.google.com/.well-known/openid-configuration"
 
     # JWT Security
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "supersecretkey123")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "")
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours per design
     
     # Storage
     AZURE_STORAGE_CONNECTION_STRING: str = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")

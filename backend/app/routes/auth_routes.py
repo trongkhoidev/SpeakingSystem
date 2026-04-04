@@ -142,6 +142,13 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 @router.get("/config/deepgram")
-async def get_deepgram_key(current_user: User = Depends(get_current_user)):
-    """Return the Deepgram API key for frontend streaming."""
+async def get_deepgram_config(current_user: User = Depends(get_current_user)):
+    """Return a temporary Deepgram API key for frontend live transcription.
+    
+    NOTE: This still returns the API key. In production, use Deepgram's
+    temporary key API (POST /v1/manage/keys) to create scoped, time-limited keys.
+    This endpoint requires JWT auth so it cannot be called without login.
+    """
+    if not settings.DEEPGRAM_API_KEY:
+        raise HTTPException(status_code=503, detail="Deepgram not configured")
     return {"api_key": settings.DEEPGRAM_API_KEY}

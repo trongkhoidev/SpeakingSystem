@@ -1,10 +1,10 @@
-from sqlalchemy import create_all, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+"""Database configuration for Azure SQL via SQLAlchemy 2.0 + pyodbc."""
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from .config import settings
 
 # For Azure SQL + pyodbc
-# Use mssql+pyodbc and proper connection string
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
 # pool_pre_ping=True for Azure SQL connections which can drop
@@ -17,9 +17,14 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """SQLAlchemy 2.0 declarative base."""
+    pass
+
 
 def get_db():
+    """FastAPI dependency for database session."""
     db = SessionLocal()
     try:
         yield db

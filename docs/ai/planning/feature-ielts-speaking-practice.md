@@ -216,3 +216,58 @@ graph LR
 - `azure-storage-blob` — Azure Blob Storage SDK
 - `aiofiles` — Async file operations
 - `pydub` — Audio format conversion
+
+---
+
+## Phase 11: Remediation (from /check-implementation) — ✅ Complete
+
+> Added 2026-04-04 after `/check-implementation` found 7 critical + 12 medium + 8 minor deviations.
+
+### Phase 11.1: Fix Blockers ✅ Done
+- [x] **R1 (C3)** Fix `database.py` import error (`create_all` → removed, `DeclarativeBase` adopted)
+- [x] **R2 (C4)** Fix `speech_routes.py` missing imports (`Session`, `get_db`) + add JWT auth via `get_current_user`
+- [x] **R3 (C7)** Update LLM model from `gemini-1.5-flash` → `gemini-2.0-flash`
+- [x] **R4 (M7)** Fix API client Content-Type (`'json'` → `'application/json'`)
+- [x] **R5 (m6)** Remove deprecated `@app.on_event("startup")`, consolidated into `lifespan`
+- [x] **R6 (m8)** Fix missing `Dict`, `Any` imports in `LLMService`
+
+### Phase 11.2: Align Data Layer ✅ Done
+- [x] **R7 (C2)** Align SQLAlchemy models with design ERD:
+  - Added `day_streak`, `last_practice_date`, `estimated_band`, `streak_calendar` to User
+  - Renamed `title` → `name` on Topic, added `order_index`
+  - Renamed `text` → `question_text`, added `model_answer`, `cue_card_json`, `cefr_level`
+  - Created `custom_questions` table (was merged into `questions`)
+  - Created `practice_sessions` table
+  - Split `answers` → `practice_answers` + `test_answers`
+  - TestSession: explicit fields instead of JSON blob config
+  - TestAnswer: added `part_number` column
+- [x] **R8 (C1)** Remove all Supabase code:
+  - Deleted `supabase_utils.py`
+  - Removed `SUPABASE_*` config from `config.py`
+  - Removed Supabase check from `main.py` startup
+  - Cleaned `utils/__init__.py`
+  - Updated Pydantic schemas (`schemas.py`) to match new models
+
+### Phase 11.3: Missing Endpoints ✅ Done
+- [x] **R9 (C5)** Implement `POST /api/v1/speech/explain-more` + `LLMService.explain_more()`
+- [x] **R10 (C6)** Add `GET /api/v1/questions?part={1,2,3}` endpoint
+- [x] **R11 (M5)** Add `offset` pagination to `GET /api/v1/user/history`
+
+### Phase 11.4: Quality & Performance ✅ Done
+- [x] **R13 (M12)** Add audio validation: min 1s, max 10min, no-speech detection
+- [x] **R14 (M4)** Return `audio_url` in assessment response
+- [x] **R15 (M1)** Fix JWT token expiry: 7 days → 24 hours per design
+- [x] **R16 (M10)** Secure Deepgram key endpoint: requires JWT auth, added production warning
+- [x] **R17 (M8)** Fix word chip colors: `"orange"` → `"amber"` per design
+- [x] **R18 (m3)** Remove stray `backend/package-lock.json`
+- [x] **R19 (m5)** Remove hardcoded default credentials from `config.py`
+
+### Phase 11.5: Final Cleanup ✅ Done
+- [x] **R12 (M9)** Parallelize Gatekeeper + Azure with `asyncio.gather()` after Deepgram completes
+- [x] **R20 (M3)** Align LLM response JSON schema — decision: keep `FC`/`LR`/`GRA` abbreviations (matches frontend), updated design doc
+- [x] **R21 (M6)** Update design doc to include Gatekeeper service (Stage 0 in architecture diagram + components table)
+- [x] **R22 (m1)** Rewrote `ARCHITECTURE.md` — Azure SQL, Blob, 3-stage pipeline, all endpoints, scoring formula
+- [x] **R23 (m2)** Removed legacy `InsightDashboard.tsx` and `ZenMode.tsx` components
+- [x] **R24 (m4)** Deleted `supabase/` directory (4 obsolete PostgreSQL migration files)
+- [x] **R25 (m7)** Audited BandScores alias — `populate_by_name = True` makes both alias and field name access work correctly
+

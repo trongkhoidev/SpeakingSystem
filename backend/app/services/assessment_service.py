@@ -1,6 +1,10 @@
+"""Assessment orchestration service — runs the full AI pipeline."""
+
+import asyncio
 import logging
-from uuid import UUID
-from fastapi import UploadFile, HTTPException
+import json
+import uuid
+from fastapi import HTTPException
 from app.models.assessment import IELTSAssessmentResult, BandScores
 from app.services.deepgram_service import DeepgramService
 from app.services.azure_service import AzureService
@@ -10,11 +14,15 @@ from app.services.gatekeeper_service import GatekeeperService
 from app.services.audio_preprocessor import AudioPreprocessor
 from app.services.blob_service import BlobService
 from sqlalchemy.orm import Session
-from app.models.sqlalchemy_models import Answer
-import json
-import uuid
+from app.models.sqlalchemy_models import PracticeAnswer
+from uuid import UUID
 
 logger = logging.getLogger(__name__)
+
+# Audio validation constants (from requirements edge cases)
+MIN_AUDIO_DURATION_SECONDS = 1.0
+MAX_AUDIO_DURATION_SECONDS = 600.0  # 10 minutes
+
 
 class AssessmentService:
     def __init__(self):
@@ -32,15 +40,22 @@ class AssessmentService:
         question_text: str,
         user_id: str,
         question_id: str,
-        session_id: str = None,
-        db: Session = None
+        session_id: str | None = None,
+        db: Session | None = None
     ) -> IELTSAssessmentResult:
-        """Runs the 3-stage AI pipeline and optionally persists to DB."""
+        """Runs the full AI pipeline and optionally persists to DB."""
         
-        # 0. Preprocess audio to 16kHz WAV
+        # 0. Audio validation (M12)
+        duration = await AudioPreprocessor.get_audio_duration(audio_data)
+        if duration < MIN_AUDIO_DURATION_SECONDS:
+            raise HTTPException(status_code=400, detail="Recording too short. Please record at least 1 second.")
+        if duration > MAX_AUDIO_DURATION_SECONDS:
+            raise HTTPException(status_code=400, detail="Recording too long. Maximum is 10 minutes.")
+
+        # 1. Preprocess audio to 16kHz WAV
         processed_audio = AudioPreprocessor.process_to_wav(audio_data)
 
-        # 1. Transcription
+        # 2. Transcription (needed by all subsequent stages)
         transcription_result = await self.deepgram_service.transcribe(
             audio_data=audio_data,
             audio_format=audio_filename.split('.')[-1].lower() or "webm",
@@ -48,19 +63,26 @@ class AssessmentService:
         )
         transcript = transcription_result.transcript
         
-        # 2. Stage 0: Gatekeeper
-        is_relevant, relevance_score = await self.gatekeeper_service.check_relevance(
+        if not transcript or len(transcript.strip()) < 5:
+            raise HTTPException(status_code=400, detail="No speech detected. Please try again with clearer audio.")
+
+        # 3. Stage 0 + Stage 1: Run Gatekeeper + Azure IN PARALLEL
+        #    Both only need the transcript from Deepgram — no dependency on each other.
+        gatekeeper_task = self.gatekeeper_service.check_relevance(
             question_text, transcript
         )
-        
-        # 3. Stage 1: Azure Pronunciation
-        azure_result = await self.azure_service.assess_pronunciation(
+        azure_task = self.azure_service.assess_pronunciation(
             audio_data=processed_audio,
             reference_text=transcript,
             language="en-US"
         )
-
-        # 4. Stage 2: Comprehensive LLM
+        
+        (is_relevant, relevance_score), azure_result = await asyncio.gather(
+            gatekeeper_task,
+            azure_task
+        )
+        
+        # 4. Stage 2: LLM analysis (needs Azure brief for context)
         azure_brief = {
             "accuracy": azure_result.accuracy_score,
             "fluency": azure_result.fluency_score,
@@ -88,29 +110,35 @@ class AssessmentService:
         
         overall_band = self.scoring_service.calculate_overall_band(band_scores)
 
-        # 6. Formatting tokens
+        # 6. Color-coded transcript tokens
         colored_tokens = self._generate_color_coded_transcript(azure_result.words)
 
         # 7. Persistence and Audio Upload
-        audio_name = None
+        audio_url = None
         if db:
             # Generate a unique name for the audio file
             audio_name = f"{user_id}/{uuid.uuid4()}.wav"
             uploaded_name = self.blob_service.upload_audio(processed_audio, audio_name)
+            audio_url = uploaded_name
             
-            answer = Answer(
-                user_id=user_id,
-                question_id=question_id,
+            answer = PracticeAnswer(
                 session_id=session_id,
-                audio_url=uploaded_name,  # Store the blob name/relative path
-                transcript=transcript,
-                band_fc=band_scores.fluency_coherence,
-                band_lr=band_scores.lexical_resource,
-                band_gra=band_scores.grammatical_accuracy,
-                band_pron=band_scores.pronunciation,
-                band_overall=overall_band,
-                feedback_json=feedback_json,
-                azure_results_json=azure_result.raw_response
+                question_id=question_id,
+                student_transcript=transcript,
+                audio_blob_url=uploaded_name,
+                duration_seconds=duration,
+                azure_result=json.dumps(azure_result.raw_response),
+                llm_result=json.dumps(feedback_json),
+                accuracy_score=azure_result.accuracy_score,
+                fluency_score=azure_result.fluency_score,
+                completeness_score=azure_result.completeness_score,
+                prosody_score=azure_result.prosody_score,
+                fc_band=band_scores.fluency_coherence,
+                lr_band=band_scores.lexical_resource,
+                gra_band=band_scores.grammatical_accuracy,
+                pronunciation_band=band_scores.pronunciation,
+                overall_band=overall_band,
+                word_details=json.dumps(colored_tokens)
             )
             db.add(answer)
             db.commit()
@@ -126,19 +154,28 @@ class AssessmentService:
             feedback_json=feedback_json,
             band_scores=band_scores,
             overall_band=overall_band,
-            color_coded_transcript=colored_tokens
+            color_coded_transcript=colored_tokens,
+            audio_url=audio_url
         )
 
     def _generate_color_coded_transcript(self, word_details: list) -> list:
+        """Generate color-coded word tokens per design (Green ≥80 / Amber ≥60 / Red <60)."""
         colored_tokens = []
         for wd in word_details:
             score = wd.accuracy_score
-            color = "green" if score >= 80 else "orange" if score >= 60 else "red"
+            color = "green" if score >= 80 else "amber" if score >= 60 else "red"
             colored_tokens.append({
                 "word": wd.word,
                 "color": color,
-                "accuracy": score,
-                "error": wd.error_type,
-                "phonemes": [{"phoneme": ph.phoneme, "accuracy_score": ph.accuracy_score, "errortype": ph.errortype} for ph in wd.phonemes]
+                "accuracy_score": score,
+                "error_type": wd.error_type,
+                "phonemes": [
+                    {
+                        "phoneme": ph.phoneme, 
+                        "accuracy_score": ph.accuracy_score, 
+                        "error_type": ph.errortype
+                    } 
+                    for ph in wd.phonemes
+                ]
             })
         return colored_tokens

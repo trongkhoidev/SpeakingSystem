@@ -23,7 +23,35 @@ async def lifespan(app: FastAPI):
     
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting...")
     
-    # Startup
+    # Startup: Validate external service connections
+    logger.info("Validating external service connections...")
+    
+    if not settings.DEEPGRAM_API_KEY:
+        logger.warning("⚠️  Deepgram API key not configured")
+    else:
+        logger.info("✓ Deepgram configured")
+    
+    if not settings.AZURE_SPEECH_KEY:
+        logger.warning("⚠️  Azure Speech key not configured")
+    else:
+        logger.info("✓ Azure Speech configured")
+    
+    if settings.LLM_PROVIDER == "gemini":
+        if not settings.GEMINI_API_KEY:
+            logger.warning("⚠️  Gemini API key not configured")
+        else:
+            logger.info("✓ Gemini configured")
+    else:
+        if not settings.OPENAI_API_KEY:
+            logger.warning("⚠️  OpenAI API key not configured")
+        else:
+            logger.info("✓ OpenAI configured")
+    
+    if not settings.AZURE_STORAGE_CONNECTION_STRING:
+        logger.warning("⚠️  Azure Blob Storage not configured")
+    else:
+        logger.info("✓ Azure Blob Storage configured")
+    
     logger.info("Services initialized")
     
     yield
@@ -98,45 +126,6 @@ async def root():
         "docs": "/docs",
         "version": settings.APP_VERSION,
     }
-
-
-# ============ STARTUP EVENTS ============
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup."""
-    
-    logger.info("Validating external service connections...")
-    
-    # Check Deepgram connection
-    if not settings.DEEPGRAM_API_KEY:
-        logger.warning("⚠️  Deepgram API key not configured")
-    else:
-        logger.info("✓ Deepgram configured")
-    
-    # Check Azure connection
-    if not settings.AZURE_SPEECH_KEY:
-        logger.warning("⚠️  Azure Speech key not configured")
-    else:
-        logger.info("✓ Azure Speech configured")
-    
-    # Check LLM connection
-    if settings.LLM_PROVIDER == "gemini":
-        if not settings.GEMINI_API_KEY:
-            logger.warning("⚠️  Gemini API key not configured")
-        else:
-            logger.info("✓ Gemini configured")
-    else:
-        if not settings.OPENAI_API_KEY:
-            logger.warning("⚠️  OpenAI API key not configured")
-        else:
-            logger.info("✓ OpenAI configured")
-    
-    # Check Supabase connection
-    if not settings.SUPABASE_URL:
-        logger.warning("⚠️  Supabase URL not configured")
-    else:
-        logger.info("✓ Supabase configured")
 
 
 if __name__ == "__main__":

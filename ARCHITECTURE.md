@@ -1,190 +1,189 @@
-# LexiLearn System Architecture Complete ✅
+# Architecture Overview — LexiLearn IELTS Speaking System
 
-## Project Status: BOILERPLATE INITIALIZED
+> **Last updated:** 2026-04-04  
+> **Stack:** React 19 + Vite | Python FastAPI | Azure SQL + Blob | Gemini 2.0 Flash
 
-This document summarizes the complete backend and database architecture setup for LexiLearn.
+---
 
-### ✅ Completed
+## System Architecture
 
-#### Backend (FastAPI)
-- [x] Project structure with modular design
-- [x] `main.py` - FastAPI entry point with middleware setup
-- [x] `/api/v1/speech/process-speech` endpoint with async handling
-- [x] **Parallel execution** of Deepgram + Azure services
-- [x] Models for audio processing and IELTS assessment
-- [x] Service layer:
-  - [x] DeepgramService - STT transcription
-  - [x] AzureService - Pronunciation assessment
-  - [x] LLMService - Lexical & grammar analysis (Gemini/GPT support)
-  - [x] ScoringService - IELTS band calculations with formula: `Score_Pron = 0.6×Acc + 0.2×Flu + 0.2×Pros`
-- [x] Supabase integration utilities
-- [x] Error handling and logging
-- [x] Configuration management via environment variables
+```mermaid
+graph TD
+    subgraph "Frontend — React 19 + Vite"
+        Dashboard["Dashboard Page"]
+        Practice["Practice Mode Page"]
+        TestExam["Test Exam Page"]
+        Recorder["Audio Recorder"]
+        LiveTx["Live Transcription (Deepgram WS)"]
+        Feedback["Feedback Panel"]
+    end
 
-#### Database (Supabase/PostgreSQL)
-- [x] User profiles table with quota management
-- [x] Questions table (public read, questions from IELTS)
-- [x] Assessments table (storing all scoring data)
-- [x] Audio recordings metadata table
-- [x] Indexes for fast queries
-- [x] Row Level Security (RLS) policies for data isolation:
-  - [x] Users can only access their own assessments
-  - [x] Users can only access their own audio files
-  - [x] Questions are publicly readable
-- [x] Foreign Data Wrapper (FDW) setup for SQL Server (10GB legacy data)
-- [x] Materialized view for caching frequent queries
+    subgraph "Backend — Python FastAPI"
+        API["REST API Gateway /api/v1"]
+        Auth["Google OAuth + JWT"]
+        GK["Stage 0: Gatekeeper"]
+        AZ["Stage 1: Azure Pronunciation"]
+        LLM["Stage 2: Gemini Analysis"]
+        Scoring["Scoring Engine"]
+        ORM["SQLAlchemy 2.0 ORM"]
+    end
 
-#### Frontend (React 19)
-- [x] ZenMode component - minimalist recording interface
-  - [x] MediaRecorder API integration
-  - [x] Real-time waveform visualization
-  - [x] Space bar to record, Enter to stop
-- [x] InsightDashboard component - results display
-  - [x] Radar chart for 4 IELTS criteria
-  - [x] Color-coded transcript (green=correct, red=error)
-  - [x] Band score breakdown
-- [x] PracticePage workflow
-  - [x] Record → Process → Display results → Try again
+    subgraph "External Services"
+        Azure["Azure Speech SDK"]
+        Deepgram["Deepgram Nova-3"]
+        Gemini["Gemini 2.0 Flash"]
+    end
 
-#### Configuration & Deployment
-- [x] requirements.txt with all dependencies
-- [x] .env.example template
-- [x] Docker-ready structure (can add Dockerfile)
-- [x] Comprehensive README with setup instructions
-- [x] API documentation
+    subgraph "Azure Data Layer"
+        AzureSQL["Azure SQL Database"]
+        BlobStore["Azure Blob Storage"]
+    end
 
-### 📋 Next Tasks (In Recommended Order)
-
-1. **[PRIORITY 1] Test Backend Endpoints**
-   - Create sample audio files
-   - Test `/process-speech` endpoint manually
-   - Verify parallel execution works
-   - Check error handling
-
-2. **[PRIORITY 2] Implement Authentication**
-   - Supabase Google OAuth setup
-   - Frontend login flow
-   - JWT token management
-   - Protected routes
-
-3. **[PRIORITY 3] Connect Frontend to Backend**
-   - Environment configuration (API base URL)
-   - HTTP client setup (axios/fetch)
-   - Error handling and user feedback
-   - Loading states
-
-4. **[PRIORITY 4] Implement Database Integration**
-   - Save assessment results to Supabase
-   - Upload audio recordings to storage
-   - Fetch user's assessment history
-   - RLS permission testing
-
-5. **[PRIORITY 5] Polish UI/UX**
-   - Responsive design for mobile
-   - Loading animations
-   - Error message displays
-   - Results export/sharing
-
-6. **[PRIORITY 6] Advanced Features**
-   - User dashboard with statistics
-   - Question library interface
-   - Pronunciation error explanation (TTS samples)
-   - Chat mentor feature (AI questions)
-
-### 🔗 API Endpoints Defined
-
-| Endpoint | Method | Status | Purpose |
-|----------|--------|--------|---------|
-| `/api/v1/speech/process-speech` | POST | ✅ Ready | Main audio processing |
-| `/api/v1/speech/assessment/{id}` | GET | 📝 Stub | Fetch saved assessment |
-| `/health` | GET | ✅ Ready | Health check |
-
-### 📊 Data Flow
-
-```
-User speaks → Frontend records audio → 
-Backend parallel processing:
-  ├─ Deepgram (transcript)
-  ├─ Azure (pronunciation scores)
-  ├─ LLM (grammar & vocabulary)
-  └─ Scoring engine (band calculation)
-→ Save to Supabase → Display dashboard
-```
-
-### 🎯 Key Implementation Details
-
-**IELTS Scoring Formula (Verified):**
-```
-Pronunciation = 0.6 × Accuracy + 0.2 × Fluency + 0.2 × Prosody
-Overall Band = (Fluency + Lexical + Grammar + Pronunciation) / 4
-IELTS Rounding: 0.75+ = next integer, 0.25-0.75 = .5, else round down
-```
-
-**Parallel Execution Pattern:**
-```python
-deepgram_task, azure_task = await asyncio.gather(
-    deepgram_service.transcribe(...),
-    azure_service.assess_pronunciation(...),
-    return_exceptions=True
-)
-```
-
-**RLS Pattern (Example):**
-```sql
-CREATE POLICY "Users can only see their assessments" ON assessments
-    FOR SELECT
-    USING (auth.uid() = user_id);
-```
-
-### 💾 Database Structure
-
-**Main Tables:**
-- `user_profiles` - Extended auth.users data
-- `questions` - IELTS speaking prompts
-- `assessments` - Full assessment results (RLS protected)
-- `audio_recordings` - Storage references (RLS protected)
-
-**Foreign Data:**
-- `exam_questions_history` - SQL Server 10GB archive (FDW)
-
-### 🚀 Quick Start Reminder
-
-```bash
-# Backend
-cd backend && pip install -r requirements.txt
-cp .env.example .env  # Edit with your keys
-python -m uvicorn main:app --reload
-
-# Frontend  
-cd frontend && npm install
-npm run dev
-```
-
-### ⚠️ Important Notes
-
-1. **API Keys Required**: Deepgram, Azure, Gemini/OpenAI - check `.env.example`
-2. **Audio Format**: WebM recommended, WAV for Azure assessment
-3. **Parallel Processing**: Asyncio handles concurrent API calls
-4. **RLS Policies**: Data isolation enforced at database level
-5. **FDW SQL Server**: Optional - for large question corpus only
-
-### 📚 Documentation
-
-- **Backend**: See docstrings in `app/services/` for detailed API docs
-- **Database**: See `supabase/README.md` for schema details
-- **Frontend**: Components are self-documented with TypeScript
-- **Overall**: `README.md` has full setup and architecture guide
-
-### 🔄 Version Control
-
-All files are ready to commit:
-```bash
-git add -A
-git commit -m "Initial LexiLearn architecture with backend, frontend, and database setup"
+    Recorder -->|WebSocket| Deepgram
+    Deepgram -->|Interim/Final text| LiveTx
+    Recorder -->|Audio Blob| API
+    API --> Auth
+    Auth --> GK
+    GK --> AZ
+    GK --> LLM
+    AZ --> Azure
+    LLM --> Gemini
+    AZ --> Scoring
+    LLM --> Scoring
+    Scoring -->|JSON Result| Feedback
+    ORM -->|CRUD| AzureSQL
+    Scoring -->|Save| ORM
+    Recorder -->|Save .wav| BlobStore
 ```
 
 ---
 
-**Status**: ✅ Ready for development  
-**Next Phase**: Authentication & Database Integration  
-**Estimated Time to MVP**: 2-3 weeks with 1-2 developers
+## Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Frontend Framework | React 19 + Vite | SPA with lazy-loaded pages |
+| Styling | TailwindCSS + custom design system | Dark mode, glassmorphism, micro-animations |
+| State Management | React Context (Auth) + local state | Lightweight, no Redux needed |
+| Backend Framework | FastAPI (Python 3.11+) | async REST API with OpenAPI docs |
+| ORM | SQLAlchemy 2.0 + pyodbc | Azure SQL Server connectivity |
+| Auth | Google OAuth (`authlib`) + JWT (`python-jose`) | 24-hour token expiry |
+| AI: Transcription | Deepgram Nova-3 | REST API for assessment, WebSocket for live |
+| AI: Pronunciation | Azure Speech SDK | Accuracy, Fluency, Prosody, Completeness |
+| AI: Linguistics | Gemini 2.0 Flash | FC, LR, GRA analysis + model answer |
+| AI: Gatekeeper | Gemini embeddings | Relevance check before expensive analysis |
+| Storage: SQL | Azure SQL Database | Users, topics, questions, sessions, answers |
+| Storage: Blob | Azure Blob Storage | Audio recordings (.wav) |
+
+---
+
+## Assessment Pipeline (< 8s target)
+
+```
+Audio Upload
+    │
+    ▼
+[0] Audio Preprocessing (pydub → 16kHz mono WAV)
+    │
+    ▼
+[1] Deepgram Transcription (REST, ~1-2s)
+    │
+    ├──────────────────────────┐
+    ▼                          ▼
+[2a] Gatekeeper            [2b] Azure Pronunciation
+     (relevance check)          (SDK, ~2-3s)
+     (~0.5s)                    │
+    │                          │
+    └──────────┬───────────────┘
+               ▼
+[3] LLM Analysis — Gemini 2.0 Flash (~2-3s)
+    (FC, LR, GRA scores + Vietnamese feedback + model answer)
+    │
+    ▼
+[4] Scoring Engine
+    (Pronunciation band, Overall band, Color-coded transcript)
+    │
+    ├──► DB Persistence (practice_answers / test_answers)
+    └──► Blob Upload (audio .wav)
+```
+
+**Parallelization:** Steps 2a + 2b run concurrently via `asyncio.gather()`.  
+Step 3 (LLM) depends on Azure results for `azure_brief` context.
+
+---
+
+## Database Schema
+
+### Tables
+
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| `users` | User profiles + streak tracking | `id` (Google Sub), `email`, `day_streak`, `estimated_band` |
+| `topics` | IELTS topic categories | `id` (UUID), `name`, `part`, `order_index` |
+| `questions` | Official question bank | `id` (UUID), `question_text`, `model_answer`, `cue_card_json`, `cefr_level` |
+| `custom_questions` | User-added questions | `id` (UUID), `user_id` FK, `question_text`, `part` |
+| `practice_sessions` | Groups practice answers | `id` (UUID), `user_id` FK, `topic_id` FK |
+| `practice_answers` | Individual practice results | All Azure sub-scores + IELTS bands + word_details JSON |
+| `test_sessions` | IELTS test exam sessions | `examiner_voice`, `question_count`, `overall_band` |
+| `test_answers` | Test exam answers | `test_session_id` FK, `part_number`, `overall_band` |
+
+### Security
+- **User isolation:** All queries filter by `user_id` from JWT (never from client input)
+- **API keys:** All external service keys are server-side only
+- **Deepgram frontend key:** Proxied through authenticated `/auth/config/deepgram` endpoint
+
+---
+
+## API Endpoints
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `POST` | `/api/v1/auth/google` | ✗ | Exchange Google token → JWT |
+| `GET` | `/api/v1/auth/me` | ✓ | Get current user profile |
+| `GET` | `/api/v1/auth/config/deepgram` | ✓ | Get Deepgram key for live transcription |
+| `GET` | `/api/v1/user/dashboard` | ✓ | Dashboard aggregation |
+| `GET` | `/api/v1/user/history` | ✓ | Practice history (paginated: `limit`, `offset`) |
+| `GET` | `/api/v1/topics` | ✓ | List topics (filter: `?part=1\|2\|3`) |
+| `GET` | `/api/v1/topics/{id}/questions` | ✓ | Questions for a topic |
+| `GET` | `/api/v1/questions` | ✓ | List questions (filter: `?part=1\|2\|3`) |
+| `POST` | `/api/v1/questions/custom` | ✓ | Create custom question |
+| `GET` | `/api/v1/questions/custom` | ✓ | List user's custom questions |
+| `POST` | `/api/v1/speech/assess` | ✓ | Full assessment pipeline |
+| `POST` | `/api/v1/speech/explain-more` | ✓ | Deeper AI analysis per criterion |
+| `POST` | `/api/v1/test/start` | ✓ | Start test session |
+| `POST` | `/api/v1/test/{id}/answer` | ✓ | Submit test answer |
+| `POST` | `/api/v1/test/{id}/complete` | ✓ | Complete test session |
+| `GET` | `/api/v1/test/{id}/report` | ✓ | Get test report |
+| `GET` | `/api/v1/test/history` | ✓ | Test session history |
+
+---
+
+## Scoring Formula
+
+```
+Pronunciation Band = map_to_ielts(0.6 × Accuracy + 0.2 × Fluency + 0.2 × Prosody)
+Overall Band = round_ielts((FC + LR + GRA + Pronunciation) / 4)
+```
+
+**IELTS Rounding:** Round to nearest 0.5 (e.g., 6.25 → 6.5, 6.74 → 6.5, 6.75 → 7.0)
+
+---
+
+## Frontend Pages
+
+| Page | Route | Key Components |
+|------|-------|----------------|
+| Dashboard | `/` | StreakCounter, DailyMission, BandEstimate, ContributionHeatmap, FeatureCards, ForecastProgress |
+| Practice | `/practice`, `/practice/:partId` | TopicSidebar, QuestionGrid, RecordingModal, FeedbackPanel, AddQuestionModal |
+| Test Exam | `/test`, `/test/:sessionId` | TestSetupModal, TestRunner, CueCard, TestReport |
+
+---
+
+## Key Design Decisions
+
+1. **Azure SQL over Supabase:** Direct SQL Server connectivity via pyodbc + SQLAlchemy for production-grade ACID compliance
+2. **Google OAuth over Supabase Auth:** `authlib` + `python-jose` for JWT management, 24h token expiry
+3. **3-Stage AI Pipeline:** Gatekeeper (relevance) → Azure (pronunciation) → Gemini (linguistics)
+4. **Parallel execution:** Gatekeeper + Azure run concurrently via `asyncio.gather()`; LLM awaits Azure results
+5. **Vietnamese UI, English content:** Navigation/labels in Vietnamese; IELTS questions, model answers, and scoring in English
+6. **Server-side audio processing:** All audio conversion (16kHz WAV) happens server-side to keep API keys secure
