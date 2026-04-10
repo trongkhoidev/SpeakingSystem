@@ -46,8 +46,15 @@ class Settings(BaseSettings):
     
     @property
     def DATABASE_URL(self) -> str:
-        # Format for pyodbc: mssql+pyodbc://user:password@server:port/database?driver=...
-        return f"mssql+pyodbc://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_SERVER}/{self.DB_NAME}?driver={self.DB_DRIVER.replace(' ', '+')}"
+        # Format for pyodbc: mssql+pyodbc://user:password@server/database?driver=...
+        import urllib.parse
+        encoded_password = urllib.parse.quote_plus(self.DB_PASSWORD)
+        
+        # For Driver 18+ we often need TrustServerCertificate=yes
+        params = f"driver={self.DB_DRIVER.replace(' ', '+')}"
+        if "18" in self.DB_DRIVER:
+            params += "&TrustServerCertificate=yes"
+        return f"mssql+pyodbc://{self.DB_USER}:{encoded_password}@{self.DB_SERVER}/{self.DB_NAME}?{params}"
 
     # Google OAuth
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")

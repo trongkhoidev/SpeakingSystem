@@ -1,7 +1,7 @@
 """Dashboard data aggregation service."""
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, distinct
+from sqlalchemy import func, desc, distinct, Date, cast
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Any
 from ..models.sqlalchemy_models import PracticeAnswer, PracticeSession, Question, Topic, User
@@ -12,7 +12,7 @@ class DashboardService:
     def get_streak(user_id: str, db: Session) -> int:
         """Calculate the current daily streak for a user."""
         activity_dates = db.query(
-            func.date(PracticeAnswer.created_at).label('activity_date')
+            cast(PracticeAnswer.created_at, Date).label('activity_date')
         ).join(
             PracticeSession, PracticeAnswer.session_id == PracticeSession.id
         ).filter(
@@ -49,7 +49,7 @@ class DashboardService:
             PracticeSession, PracticeAnswer.session_id == PracticeSession.id
         ).filter(
             PracticeSession.user_id == user_id,
-            func.date(PracticeAnswer.created_at) == today
+            cast(PracticeAnswer.created_at, Date) == today
         ).count()
         
         return {
@@ -126,13 +126,13 @@ class DashboardService:
         start_date = date.today() - timedelta(days=154)
         
         activity = db.query(
-            func.date(PracticeAnswer.created_at).label('date'),
+            cast(PracticeAnswer.created_at, Date).label('date'),
             func.count(PracticeAnswer.id).label('count')
         ).join(
             PracticeSession, PracticeAnswer.session_id == PracticeSession.id
         ).filter(
             PracticeSession.user_id == user_id,
-            func.date(PracticeAnswer.created_at) >= start_date
-        ).group_by(func.date(PracticeAnswer.created_at)).all()
+            cast(PracticeAnswer.created_at, Date) >= start_date
+        ).group_by(cast(PracticeAnswer.created_at, Date)).all()
         
         return [{"date": str(a.date), "count": a.count} for a in activity]
