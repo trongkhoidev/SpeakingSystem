@@ -21,7 +21,7 @@ class User(Base):
     id = Column(String(255), primary_key=True, index=True)  # Google Sub ID
     email = Column(NVARCHAR(100), unique=True, index=True, nullable=False)
     full_name = Column(NVARCHAR(200))
-    google_id = Column(NVARCHAR(500), unique=True, nullable=True)
+    google_id = Column(NVARCHAR(500), nullable=True)
     avatar_url = Column(NVARCHAR(500))
     day_streak = Column(Integer, default=0)
     last_practice_date = Column(Date, nullable=True)

@@ -1,6 +1,6 @@
 INFO:     Will watch for changes in these directories: ['/Users/admin/Development/SpeakingSystem/backend']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [40685] using WatchFiles
+INFO:     Started reloader process [53469] using WatchFiles
 /Users/admin/Development/SpeakingSystem/backend/app/services/gatekeeper_service.py:7: FutureWarning: 
 
 All support for the `google.generativeai` package has ended. It will no longer be receiving 
@@ -13,32 +13,62 @@ https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/READM
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-INFO:     Started server process [40688]
+INFO:     Started server process [53474]
 INFO:     Waiting for application startup.
-2026-04-10 08:38:19,646 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
-2026-04-10 08:38:19,657 - main - INFO - Validating external service connections...
-2026-04-10 08:38:19,658 - main - INFO - ✓ Deepgram configured
-2026-04-10 08:38:19,658 - main - INFO - ✓ Azure Speech configured
-2026-04-10 08:38:19,658 - main - INFO - ✓ Gemini configured
-2026-04-10 08:38:19,658 - main - WARNING - ⚠️  Azure Blob Storage not configured
-2026-04-10 08:38:19,658 - main - INFO - Services initialized
+2026-04-10 09:48:52,977 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
+2026-04-10 09:48:52,977 - main - INFO - Validating external service connections...
+2026-04-10 09:48:52,977 - main - INFO - ✓ Deepgram configured
+2026-04-10 09:48:52,977 - main - INFO - ✓ Azure Speech configured
+2026-04-10 09:48:52,977 - main - INFO - ✓ Gemini configured
+2026-04-10 09:48:52,977 - main - WARNING - ⚠️  Azure Blob Storage not configured
+2026-04-10 09:48:52,977 - main - INFO - Services initialized
 INFO:     Application startup complete.
-2026-04-10 08:38:27,813 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
-2026-04-10 08:38:28,052 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
-2026-04-10 08:38:43,167 - app.routes.auth_routes - ERROR - Google login failed: (pyodbc.OperationalError) ('HYT00', '[HYT00] [Microsoft][ODBC Driver 18 for SQL Server]Login timeout expired (0) (SQLDriverConnect)')
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-INFO:     127.0.0.1:62977 - "POST /api/v1/auth/google HTTP/1.1" 401 Unauthorized
-2026-04-10 08:39:31,576 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
-2026-04-10 08:39:31,766 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
-2026-04-10 08:39:46,817 - app.routes.auth_routes - ERROR - Google login failed: (pyodbc.OperationalError) ('HYT00', '[HYT00] [Microsoft][ODBC Driver 18 for SQL Server]Login timeout expired (0) (SQLDriverConnect)')
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-INFO:     127.0.0.1:63033 - "POST /api/v1/auth/google HTTP/1.1" 401 Unauthorized
-WARNING:  WatchFiles detected changes in 'test_db_conn.py'. Reloading...
+INFO:     127.0.0.1:53979 - "OPTIONS /api/v1/auth/google HTTP/1.1" 200 OK
+2026-04-10 09:49:09,757 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2026-04-10 09:49:10,984 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2026-04-10 09:49:13,261 - app.routes.auth_routes - ERROR - Google login failed: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__users__CCBDE7DC6D8F598B'. Cannot insert duplicate key in object 'dbo.users'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW)")
+[SQL: INSERT INTO users (id, email, full_name, google_id, avatar_url, day_streak, last_practice_date, estimated_band, streak_calendar) OUTPUT inserted.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('115055287124309896007', 'ntkkidz2k5@gmail.com', 'Khôi Nguyễn Trọng', None, 'https://lh3.googleusercontent.com/a/ACg8ocJHAVhS1x9ytIPHuw7oEqRpAMVkKG_a49rxk-nTHHY0PrJKLw=s96-c', 0, None, 0.0, None)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:     127.0.0.1:53979 - "POST /api/v1/auth/google HTTP/1.1" 401 Unauthorized
+2026-04-10 09:50:24,275 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2026-04-10 09:50:24,542 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2026-04-10 09:50:25,050 - app.routes.auth_routes - ERROR - Google login failed: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__users__CCBDE7DC6D8F598B'. Cannot insert duplicate key in object 'dbo.users'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW)")
+[SQL: INSERT INTO users (id, email, full_name, google_id, avatar_url, day_streak, last_practice_date, estimated_band, streak_calendar) OUTPUT inserted.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('115055287124309896007', 'ntkkidz2k5@gmail.com', 'Khôi Nguyễn Trọng', None, 'https://lh3.googleusercontent.com/a/ACg8ocJHAVhS1x9ytIPHuw7oEqRpAMVkKG_a49rxk-nTHHY0PrJKLw=s96-c', 0, None, 0.0, None)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:     127.0.0.1:54049 - "POST /api/v1/auth/google HTTP/1.1" 401 Unauthorized
+2026-04-10 09:50:36,379 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2026-04-10 09:50:36,877 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54058 - "POST /api/v1/auth/google HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54058 - "OPTIONS /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54058 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54069 - "OPTIONS /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54070 - "OPTIONS /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54070 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54069 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54615 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54615 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54615 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54617 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54750 - "OPTIONS /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54751 - "OPTIONS /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54750 - "GET /api/v1/auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:54751 - "GET /api/v1/auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:54835 - "OPTIONS /api/v1/auth/google HTTP/1.1" 200 OK
+2026-04-10 10:00:46,761 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2026-04-10 10:00:46,963 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+2026-04-10 10:00:47,428 - app.routes.auth_routes - ERROR - Google login failed: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__users__CCBDE7DC6D8F598B'. Cannot insert duplicate key in object 'dbo.users'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW)")
+[SQL: INSERT INTO users (id, email, full_name, google_id, avatar_url, day_streak, last_practice_date, estimated_band, streak_calendar) OUTPUT inserted.created_at VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('108975496249241383136', 'trongkhoidev@gmail.com', 'Khôi Nguyễn Trọng', None, 'https://lh3.googleusercontent.com/a/ACg8ocLQAnnxaq0nP9Eois3oQs8zRcrv8eiqTShGaxZ4xO4kdukbMQ=s96-c', 0, None, 0.0, None)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+INFO:     127.0.0.1:54835 - "POST /api/v1/auth/google HTTP/1.1" 401 Unauthorized
+WARNING:  WatchFiles detected changes in 'app/models/sqlalchemy_models.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
-2026-04-10 08:40:28,827 - main - INFO - Shutting down services...
+2026-04-10 10:01:52,187 - main - INFO - Shutting down services...
 INFO:     Application shutdown complete.
-INFO:     Finished server process [40688]
+INFO:     Finished server process [53474]
 /Users/admin/Development/SpeakingSystem/backend/app/services/gatekeeper_service.py:7: FutureWarning: 
 
 All support for the `google.generativeai` package has ended. It will no longer be receiving 
@@ -51,22 +81,22 @@ https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/READM
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-INFO:     Started server process [40929]
+INFO:     Started server process [68184]
 INFO:     Waiting for application startup.
-2026-04-10 08:40:30,709 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
-2026-04-10 08:40:30,709 - main - INFO - Validating external service connections...
-2026-04-10 08:40:30,709 - main - INFO - ✓ Deepgram configured
-2026-04-10 08:40:30,709 - main - INFO - ✓ Azure Speech configured
-2026-04-10 08:40:30,709 - main - INFO - ✓ Gemini configured
-2026-04-10 08:40:30,709 - main - WARNING - ⚠️  Azure Blob Storage not configured
-2026-04-10 08:40:30,709 - main - INFO - Services initialized
+2026-04-10 10:01:53,935 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
+2026-04-10 10:01:53,935 - main - INFO - Validating external service connections...
+2026-04-10 10:01:53,935 - main - INFO - ✓ Deepgram configured
+2026-04-10 10:01:53,935 - main - INFO - ✓ Azure Speech configured
+2026-04-10 10:01:53,935 - main - INFO - ✓ Gemini configured
+2026-04-10 10:01:53,935 - main - WARNING - ⚠️  Azure Blob Storage not configured
+2026-04-10 10:01:53,935 - main - INFO - Services initialized
 INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/core/config.py'. Reloading...
+WARNING:  WatchFiles detected changes in 'fix_db.py'. Reloading...
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
-2026-04-10 08:40:46,050 - main - INFO - Shutting down services...
+2026-04-10 10:02:00,214 - main - INFO - Shutting down services...
 INFO:     Application shutdown complete.
-INFO:     Finished server process [40929]
+INFO:     Finished server process [68184]
 /Users/admin/Development/SpeakingSystem/backend/app/services/gatekeeper_service.py:7: FutureWarning: 
 
 All support for the `google.generativeai` package has ended. It will no longer be receiving 
@@ -79,275 +109,27 @@ https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/READM
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
 AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-INFO:     Started server process [41123]
+INFO:     Started server process [68212]
 INFO:     Waiting for application startup.
-2026-04-10 08:40:47,614 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
-2026-04-10 08:40:47,614 - main - INFO - Validating external service connections...
-2026-04-10 08:40:47,614 - main - INFO - ✓ Deepgram configured
-2026-04-10 08:40:47,614 - main - INFO - ✓ Azure Speech configured
-2026-04-10 08:40:47,614 - main - INFO - ✓ Gemini configured
-2026-04-10 08:40:47,614 - main - WARNING - ⚠️  Azure Blob Storage not configured
-2026-04-10 08:40:47,614 - main - INFO - Services initialized
+2026-04-10 10:02:01,865 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
+2026-04-10 10:02:01,865 - main - INFO - Validating external service connections...
+2026-04-10 10:02:01,865 - main - INFO - ✓ Deepgram configured
+2026-04-10 10:02:01,865 - main - INFO - ✓ Azure Speech configured
+2026-04-10 10:02:01,865 - main - INFO - ✓ Gemini configured
+2026-04-10 10:02:01,865 - main - WARNING - ⚠️  Azure Blob Storage not configured
+2026-04-10 10:02:01,865 - main - INFO - Services initialized
 INFO:     Application startup complete.
-INFO:     127.0.0.1:63197 - "OPTIONS /api/v1/auth/google HTTP/1.1" 200 OK
-2026-04-10 08:43:13,088 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
-2026-04-10 08:43:13,569 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
-2026-04-10 08:43:23,323 - app.routes.auth_routes - ERROR - Google login failed: (pyodbc.ProgrammingError) ('42S02', "[42S02] [Microsoft][ODBC Driver 18 for SQL Server][SQL Server]Invalid object name 'users'. (208) (SQLExecDirectW)")
-[SQL: SELECT TOP 1 users.id AS users_id, users.email AS users_email, users.full_name AS users_full_name, users.google_id AS users_google_id, users.avatar_url AS users_avatar_url, users.day_streak AS users_day_streak, users.last_practice_date AS users_last_practice_date, users.estimated_band AS users_estimated_band, users.streak_calendar AS users_streak_calendar, users.created_at AS users_created_at 
-FROM users 
-WHERE users.id = ?]
-[parameters: ('115055287124309896007',)]
-(Background on this error at: https://sqlalche.me/e/20/f405)
-INFO:     127.0.0.1:63197 - "POST /api/v1/auth/google HTTP/1.1" 401 Unauthorized
-WARNING:  WatchFiles detected changes in 'init_db.py'. Reloading...
+2026-04-10 10:05:40,604 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
+2026-04-10 10:05:41,086 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55144 - "POST /api/v1/auth/google HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55144 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55159 - "OPTIONS /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55160 - "OPTIONS /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55160 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55159 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
-2026-04-10 08:46:13,392 - main - INFO - Shutting down services...
+2026-04-10 10:06:00,219 - main - INFO - Shutting down services...
 INFO:     Application shutdown complete.
-INFO:     Finished server process [41123]
-/Users/admin/Development/SpeakingSystem/backend/app/services/gatekeeper_service.py:7: FutureWarning: 
-
-All support for the `google.generativeai` package has ended. It will no longer be receiving 
-updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
-See README for more details:
-
-https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
-
-  import google.generativeai as genai
-AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-INFO:     Started server process [42234]
-INFO:     Waiting for application startup.
-2026-04-10 08:46:15,008 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
-2026-04-10 08:46:15,008 - main - INFO - Validating external service connections...
-2026-04-10 08:46:15,008 - main - INFO - ✓ Deepgram configured
-2026-04-10 08:46:15,008 - main - INFO - ✓ Azure Speech configured
-2026-04-10 08:46:15,008 - main - INFO - ✓ Gemini configured
-2026-04-10 08:46:15,008 - main - WARNING - ⚠️  Azure Blob Storage not configured
-2026-04-10 08:46:15,008 - main - INFO - Services initialized
-INFO:     Application startup complete.
-INFO:     127.0.0.1:64473 - "OPTIONS /api/v1/auth/google HTTP/1.1" 200 OK
-2026-04-10 08:47:35,376 - httpx - INFO - HTTP Request: GET https://accounts.google.com/.well-known/openid-configuration "HTTP/1.1 200 OK"
-2026-04-10 08:47:35,607 - httpx - INFO - HTTP Request: GET https://www.googleapis.com/oauth2/v3/certs "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:64473 - "POST /api/v1/auth/google HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64473 - "OPTIONS /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64473 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64499 - "OPTIONS /api/v1/user/dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64500 - "OPTIONS /api/v1/user/dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64500 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:64499 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:64614 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64614 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64614 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:64616 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:64740 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64740 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64740 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:64746 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:65129 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:65129 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:65129 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-INFO:     127.0.0.1:65135 - "GET /api/v1/user/dashboard HTTP/1.1" 500 Internal Server Error
-WARNING:  WatchFiles detected changes in 'app/services/dashboard_service.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-04-10 08:50:37,643 - main - INFO - Shutting down services...
-INFO:     Application shutdown complete.
-INFO:     Finished server process [42234]
-/Users/admin/Development/SpeakingSystem/backend/app/services/gatekeeper_service.py:7: FutureWarning: 
-
-All support for the `google.generativeai` package has ended. It will no longer be receiving 
-updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
-See README for more details:
-
-https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
-
-  import google.generativeai as genai
-AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-AZURE_STORAGE_CONNECTION_STRING not set. Blob storage disabled.
-INFO:     Started server process [43343]
-INFO:     Waiting for application startup.
-2026-04-10 08:50:39,477 - main - INFO - 🚀 LexiLearn API v1.0.0 starting...
-2026-04-10 08:50:39,477 - main - INFO - Validating external service connections...
-2026-04-10 08:50:39,477 - main - INFO - ✓ Deepgram configured
-2026-04-10 08:50:39,477 - main - INFO - ✓ Azure Speech configured
-2026-04-10 08:50:39,477 - main - INFO - ✓ Gemini configured
-2026-04-10 08:50:39,477 - main - WARNING - ⚠️  Azure Blob Storage not configured
-2026-04-10 08:50:39,477 - main - INFO - Services initialized
-INFO:     Application startup complete.
-INFO:     127.0.0.1:49186 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49197 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49186 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49197 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49459 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49461 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49459 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49461 - "GET /api/v1/user/dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50773 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50785 - "GET /api/v1/auth/me HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-pyodbc.OperationalError: ('08S01', '[08S01] [Microsoft][ODBC Driver 18 for SQL Server]TCP Provider: Error code 0x20 (32) (SQLExecDirectW)')
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1159, in __call__
-    await super().__call__(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/applications.py", line 90, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
-    raise exc
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/middleware/trustedhost.py", line 36, in __call__
-    await self.app(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 96, in __call__
-    await self.simple_response(scope, receive, send, request_headers=headers)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/middleware/cors.py", line 154, in simple_response
-    await self.app(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/routing.py", line 660, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/routing.py", line 680, in app
-    await route.handle(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/routing.py", line 276, in handle
-    await self.app(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/fastapi/routing.py", line 134, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/fastapi/routing.py", line 120, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/fastapi/routing.py", line 457, in app
-    solved_result = await solve_dependencies(
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<6 lines>...
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/fastapi/dependencies/utils.py", line 678, in solve_dependencies
-    solved = await call(**solved_result.values)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/admin/Development/SpeakingSystem/backend/app/routes/auth_routes.py", line 43, in get_current_user
-    user = db.query(User).filter(User.id == user_id).first()
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/orm/query.py", line 2759, in first
-    return self.limit(1)._iter().first()  # type: ignore
-           ~~~~~~~~~~~~~~~~~~~^^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/orm/query.py", line 2857, in _iter
-    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
-                                                  ~~~~~~~~~~~~~~~~~~~~^
-        statement,
-        ^^^^^^^^^^
-        params,
-        ^^^^^^^
-        execution_options={"_sa_orm_load_options": self.load_options},
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
-    return self._execute_internal(
-           ~~~~~~~~~~~~~~~~~~~~~~^
-        statement,
-        ^^^^^^^^^^
-    ...<4 lines>...
-        _add_event=_add_event,
-        ^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        self,
-        ^^^^^
-    ...<4 lines>...
-        conn,
-        ^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
-    result = conn.execute(
-        statement, params or {}, execution_options=execution_options
-    )
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
-    return meth(
-        self,
-        distilled_parameters,
-        execution_options or NO_OPTIONS,
-    )
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        self, distilled_params, execution_options
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
-    ret = self._execute_context(
-        dialect,
-    ...<8 lines>...
-        cache_hit=cache_hit,
-    )
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
-    return self._exec_single_context(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~^
-        dialect, context, statement, parameters
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
-    self._handle_dbapi_exception(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        e, str_statement, effective_parameters, cursor, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/admin/Development/SpeakingSystem/backend/venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlalchemy.exc.OperationalError: (pyodbc.OperationalError) ('08S01', '[08S01] [Microsoft][ODBC Driver 18 for SQL Server]TCP Provider: Error code 0x20 (32) (SQLExecDirectW)')
-[SQL: SELECT TOP 1 users.id AS users_id, users.email AS users_email, users.full_name AS users_full_name, users.google_id AS users_google_id, users.avatar_url AS users_avatar_url, users.day_streak AS users_day_streak, users.last_practice_date AS users_last_practice_date, users.estimated_band AS users_estimated_band, users.streak_calendar AS users_streak_calendar, users.created_at AS users_created_at 
-FROM users 
-WHERE users.id = ?]
-[parameters: ('110591878600392524257',)]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     Finished server process [68212]
+INFO:     Stopping reloader process [53469]
