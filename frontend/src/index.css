@@ -1,18 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   GLOBAL RESET & BASE
-   ============================================================ */
 *, *::before, *::after {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
 
 html, body, #root {
   width: 100%;
@@ -20,8 +14,14 @@ html, body, #root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: #F5F7FA;
   color: #1A1D2B;
-  overflow: hidden; /* root không scroll */
   line-height: 1.6;
+}
+
+/* Login page: full viewport, không bị constrain bởi app-root */
+.login-page-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: #FFFFFF;
 }
 
 h1, h2, h3, h4, .font-heading {

@@ -23,6 +23,15 @@ async def lifespan(app: FastAPI):
     
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting...")
     
+    # ── Khởi tạo database tables (tự động cho SQLite fallback) ──
+    try:
+        from app.core.database import engine, Base
+        from app.models import sqlalchemy_models  # noqa: F401 — đảm bảo models được import
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Database tables ready")
+    except Exception as e:
+        logger.warning(f"⚠️  DB table creation skipped: {e}")
+    
     # Startup: Validate external service connections
     logger.info("Validating external service connections...")
     
@@ -58,6 +67,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down services...")
+
 
 
 # Create FastAPI app

@@ -1,12 +1,15 @@
 """SQLAlchemy ORM models aligned with the approved design ERD."""
 
 from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, Text, Date
-from sqlalchemy import NVARCHAR, DECIMAL
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import uuid
 from ..core.database import Base
+
+# Alias NVARCHAR → String, DECIMAL → Float (tương thích cả SQL Server và SQLite)
+NVARCHAR = String
+DECIMAL = Float
 
 
 class User(Base):

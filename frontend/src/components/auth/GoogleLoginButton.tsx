@@ -1,32 +1,18 @@
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../lib/auth-context';
-import { ShieldCheck } from 'lucide-react';
 
 export function GoogleLoginButton() {
   const { login } = useAuth();
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-xl font-bold font-heading" style={{ color: 'var(--text-primary)' }}>
-          Đăng nhập để bắt đầu
-        </h2>
-        <p className="text-sm leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--text-secondary)' }}>
-          Sử dụng tài khoản Google để lưu tiến trình và nhận đánh giá IELTS từ AI.
-        </p>
-      </div>
-
-      {/* Divider */}
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex-1 h-[1px]" style={{ background: 'var(--border-light)' }} />
-        <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
-          Đăng nhập bằng
-        </span>
-        <div className="flex-1 h-[1px]" style={{ background: 'var(--border-light)' }} />
-      </div>
-
-      {/* Google button */}
-      <div id="google-login-btn" className="w-full flex justify-center">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Custom styled Google button wrapper */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-start',
+        }}
+      >
         <GoogleLogin
           onSuccess={(credentialResponse) => {
             if (credentialResponse.credential) {
@@ -34,19 +20,38 @@ export function GoogleLoginButton() {
             }
           }}
           onError={() => console.error('Login Failed')}
-          useOneTap
-          prompt_parent_id="google-onetap-container"
+          useOneTap={false}
           theme="outline"
-          shape="pill"
+          shape="rectangular"
           size="large"
-          width="300"
-          text="continue_with"
+          width={320}
+          text="signin_with"
+          logo_alignment="left"
         />
       </div>
 
-      <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'var(--success)' }} />
-        Thông tin của bạn được bảo mật tuyệt đối
+      {/* Divider */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, height: 1, background: '#F0F2F5' }} />
+        <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
+          hoặc
+        </span>
+        <div style={{ flex: 1, height: 1, background: '#F0F2F5' }} />
+      </div>
+
+      {/* Demo hint */}
+      <div
+        style={{
+          padding: '10px 14px',
+          background: '#F8F9FE',
+          border: '1px solid #E8ECF1',
+          borderRadius: 9,
+          fontSize: 11.5,
+          color: '#9CA3AF',
+          textAlign: 'center',
+        }}
+      >
+        Sử dụng tài khoản <strong style={{ color: '#4361EE' }}>Google</strong> bạn đã đăng ký để tiếp tục
       </div>
     </div>
   );
