@@ -16,38 +16,40 @@ export function LoginPage() {
   }, [isAuthenticated, navigate, from]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-dark relative overflow-hidden">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/20 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-secondary/10 rounded-full blur-[120px] animate-pulse-ring"></div>
-      
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="text-center mb-10">
-          <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-premium rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 transform -rotate-6">
-              <span className="text-3xl font-black text-white">L</span>
+    <div className="login-page">
+      <div className="w-full max-w-md px-5 animate-scale-in">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center mb-5">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center"
+              style={{ background: 'var(--primary)', boxShadow: '0 6px 20px rgba(67,97,238,0.3)' }}
+            >
+              <span className="text-3xl font-extrabold text-white font-heading">L</span>
             </div>
           </div>
-          <h1 className="text-4xl font-black mb-2 tracking-tighter">
-            <span className="text-white">Lexi</span>
-            <span className="gradient-text">Learn</span>
+          <h1 className="text-4xl font-extrabold tracking-tight font-heading">
+            <span style={{ color: 'var(--text-primary)' }}>Lexi</span>
+            <span style={{ color: 'var(--primary)' }}>Learn</span>
           </h1>
-          <p className="text-text-secondary font-medium uppercase tracking-[0.2em] text-xs">
+          <p className="text-sm mt-2 font-medium" style={{ color: 'var(--text-muted)' }}>
             Hệ thống Luyện nói IELTS thông minh
           </p>
         </div>
-        
-        <GoogleLoginButton />
-        
-        <div className="mt-12 text-center text-text-muted text-sm max-w-xs mx-auto">
-          Hoàn thiện kỹ năng, Nâng cao Band điểm và Tự tin trước giám khảo.
+
+        {/* Login card */}
+        <div className="login-card">
+          <GoogleLoginButton />
         </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+          Hoàn thiện kỹ năng • Nâng cao Band điểm • Tự tin trước giám khảo
+        </p>
       </div>
-      
-      {/* Decorative Floating Circles */}
-      <div className="absolute top-1/4 right-1/4 w-3 h-3 bg-primary rounded-full animate-float delay-100 opacity-60"></div>
-      <div className="absolute bottom-1/3 left-1/4 w-2 h-2 bg-secondary rounded-full animate-float delay-500 opacity-40"></div>
-      <div className="absolute top-1/2 left-20 w-4 h-4 bg-accent rounded-full animate-float delay-1000 opacity-30"></div>
+
+      {/* Google One Tap container — render popup ở giữa màn hình */}
+      <div id="google-onetap-container" />
     </div>
   );
 }

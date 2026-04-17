@@ -11,29 +11,37 @@ export function StreakCounter({ currentStreak, isLoading = false }: StreakCounte
 
   useEffect(() => {
     if (!isLoading) {
-      const timer = setTimeout(() => {
-        setCount(currentStreak);
-      }, 300);
+      const timer = setTimeout(() => setCount(currentStreak), 300);
       return () => clearTimeout(timer);
     }
   }, [currentStreak, isLoading]);
 
   return (
-    <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10 hover-lift transition-all">
-      <div className="p-3 bg-primary/20 rounded-2xl shadow-inner-white">
-        <Flame 
-          className={`w-7 h-7 text-primary ${count > 0 ? 'animate-pulse' : ''}`} 
-          fill={count > 0 ? 'currentColor' : 'none'} 
+    <div
+      className="flex items-center gap-3 px-4 py-3 rounded-xl hover-lift"
+      style={{
+        background: '#FFF7E6',
+        border: '1px solid #FDDFA0',
+      }}
+    >
+      <div
+        className="p-2.5 rounded-xl"
+        style={{ background: '#FFE8A0' }}
+      >
+        <Flame
+          className={`w-5 h-5 ${count > 0 ? 'animate-pulse' : ''}`}
+          style={{ color: '#E2940A' }}
+          fill={count > 0 ? 'currentColor' : 'none'}
         />
       </div>
       <div>
         <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-white tracking-tight transition-all duration-700">
+          <span className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
             {count}
           </span>
-          <span className="text-sm font-medium text-text-secondary">ngày</span>
+          <span className="text-sm" style={{ color: 'var(--text-muted)' }}>ngày</span>
         </div>
-        <div className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
+        <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--warning)' }}>
           Chuỗi học tập
         </div>
       </div>

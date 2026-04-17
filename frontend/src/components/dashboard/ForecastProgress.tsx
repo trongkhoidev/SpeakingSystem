@@ -13,40 +13,43 @@ interface ForecastProgressProps {
   isLoading?: boolean;
 }
 
+const PART_COLORS: Record<number, string> = {
+  0: '#4361EE',
+  1: '#7C3AED',
+  2: '#22A06B',
+};
+
 export function ForecastProgress({ progress, isLoading = false }: ForecastProgressProps) {
   return (
-    <div className="glass-card p-6 flex flex-col justify-between space-y-6 hover-lift h-full border-t-2 border-indigo-400/20">
+    <div className="card p-5 flex flex-col gap-4 h-full hover-lift">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-white flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-indigo-400" />
+        <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <BarChart3 className="w-4 h-4" style={{ color: 'var(--primary)' }} />
           Tiến độ Forecast
         </h3>
-        <span className="text-[10px] font-bold text-text-secondary bg-white/5 py-1 px-3 rounded-full border border-white/5 uppercase tracking-wider">
+        <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--bg-body)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
           Quý 1, 2026
         </span>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 flex-1">
         {progress.map((p, index) => {
-          const percentage = (p.completed / p.total) * 100;
+          const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+          const barColor = PART_COLORS[index] ?? 'var(--primary)';
           return (
-            <div key={index} className="space-y-2 group">
-              <div className="flex justify-between items-end">
-                <div>
-                  <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight">
-                    {p.part}
-                  </span>
-                  <div className="text-[10px] text-text-secondary font-semibold uppercase opacity-60">Chủ đề hoàn thành</div>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-white tracking-widest">{p.completed}</span>
-                  <span className="text-xs text-text-secondary">/{p.total}</span>
-                </div>
+            <div key={index} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {p.part}
+                </span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{p.completed}</span>/{p.total}
+                </span>
               </div>
-              <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                <div 
-                  className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(0,0,0,0.5)] ${p.color}`} 
-                  style={{ width: `${percentage}%` }} 
+              <div className="progress-bar">
+                <div
+                  className="progress-bar__fill transition-all duration-1000"
+                  style={{ width: `${pct}%`, background: barColor }}
                 />
               </div>
             </div>
@@ -54,11 +57,24 @@ export function ForecastProgress({ progress, isLoading = false }: ForecastProgre
         })}
       </div>
 
-      <div className="pt-2">
-        <button className="w-full py-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs font-bold text-text-secondary hover:bg-white/10 hover:text-white hover:border-white/10 transition-all uppercase tracking-widest">
-           Xem chi tiết lộ trình
-        </button>
-      </div>
+      <button
+        className="w-full py-2 rounded-xl text-xs font-semibold transition-colors hover-lift mt-auto"
+        style={{
+          background: 'var(--bg-body)',
+          color: 'var(--text-secondary)',
+          border: '1px solid var(--border-light)',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = 'var(--primary-bg)';
+          (e.currentTarget as HTMLElement).style.color = 'var(--primary-text)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background = 'var(--bg-body)';
+          (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+        }}
+      >
+        Xem chi tiết lộ trình
+      </button>
     </div>
   );
 }

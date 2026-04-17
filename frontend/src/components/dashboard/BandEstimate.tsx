@@ -11,64 +11,74 @@ interface BandEstimateProps {
 export function BandEstimate({ currentBand, change = 0, tips, isLoading = false }: BandEstimateProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const toggleAccordion = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
-
   return (
-    <div className="glass-card p-6 flex flex-col justify-between space-y-6 hover-lift h-full border-t-2 border-primary/20">
+    <div
+      className="card p-5 flex flex-col gap-4 h-full hover-lift"
+      style={{ borderTop: '2px solid var(--primary)' }}
+    >
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-white flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
+        <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <TrendingUp className="w-4 h-4" style={{ color: 'var(--primary)' }} />
           Ước lượng Band
         </h3>
-        <span className="text-[10px] font-bold text-text-secondary bg-white/5 py-1 px-3 rounded-full border border-white/5 uppercase tracking-wider">
-          Dựa trên 10 bài gần nhất
+        <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ background: 'var(--bg-body)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
+          10 bài gần nhất
         </span>
       </div>
 
-      <div className="flex items-end gap-4">
-        <div className="relative">
-          <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full opacity-50" />
-          <div className="relative text-6xl font-bold text-white tracking-tighter drop-shadow-sm font-heading animate-in zoom-in duration-1000">
-            {currentBand.toFixed(1)}
-          </div>
+      {/* Band score */}
+      <div className="flex items-end gap-3">
+        <div className="text-5xl font-bold font-heading" style={{ color: 'var(--primary)' }}>
+          {currentBand.toFixed(1)}
         </div>
-        <div className="flex flex-col mb-2">
-          <div className={`text-sm font-bold flex items-center gap-1 ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <div className="mb-1 flex flex-col">
+          <span
+            className="text-sm font-semibold flex items-center gap-1"
+            style={{ color: change >= 0 ? 'var(--success)' : 'var(--error)' }}
+          >
             {change >= 0 ? '+' : ''}{change.toFixed(1)}
             <TrendingUp className={`w-3 h-3 ${change < 0 ? 'rotate-180' : ''}`} />
-          </div>
-          <span className="text-[10px] text-text-secondary font-semibold uppercase opacity-60">Tháng này</span>
+          </span>
+          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Tháng này</span>
         </div>
       </div>
 
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-widest pl-1">
-          <Lightbulb className="w-3.5 h-3.5" />
+      {/* Tips accordion */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5 section-label">
+          <Lightbulb className="w-3 h-3" />
           Lưu ý cải thiện
         </div>
-        
-        <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
+        <div className="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar">
           {tips.map((tip, index) => (
-            <div 
-              key={index} 
-              className="group overflow-hidden rounded-xl bg-white/[0.02] border border-white/5 transition-colors hover:bg-white/[0.04]"
+            <div
+              key={index}
+              className="rounded-xl overflow-hidden transition-colors"
+              style={{
+                background: 'var(--bg-body)',
+                border: '1px solid var(--border-light)',
+              }}
             >
-              <button 
-                onClick={() => toggleAccordion(index)}
-                className="w-full flex items-center justify-between p-3 text-left transition-all"
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                className="w-full flex items-center justify-between px-3 py-2.5 text-left"
               >
-                <span className="text-sm font-medium text-white/90 group-hover:text-white">{tip.title}</span>
-                <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
+                <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {tip.title}
+                </span>
+                <ChevronDown
+                  className="w-3.5 h-3.5 transition-transform duration-200 flex-shrink-0"
+                  style={{ color: 'var(--text-muted)', transform: openIndex === index ? 'rotate(180deg)' : 'none' }}
+                />
               </button>
-              
-              <div 
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  openIndex === index ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'
-                }`}
+              <div
+                className="overflow-hidden transition-all duration-250"
+                style={{ maxHeight: openIndex === index ? '80px' : '0', opacity: openIndex === index ? 1 : 0 }}
               >
-                <div className="p-3 pt-0 text-xs text-text-secondary leading-relaxed border-t border-white/5 mx-3 mt-1">
+                <div
+                  className="px-3 pb-3 text-xs leading-relaxed"
+                  style={{ color: 'var(--text-secondary)', borderTop: '1px solid var(--border-light)' }}
+                >
                   {tip.content}
                 </div>
               </div>

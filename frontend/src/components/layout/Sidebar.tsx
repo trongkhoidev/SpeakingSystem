@@ -1,11 +1,12 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, BookOpen, GraduationCap, Settings, LogOut } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../lib/auth-context';
 
 const navItems = [
-  { icon: Home, label: 'Trang chủ', to: '/' },
-  { icon: BookOpen, label: 'Luyện theo câu', to: '/practice' },
-  { icon: GraduationCap, label: 'Thi thử', to: '/test' },
+  { icon: Home,          label: 'Trang chủ',      to: '/' },
+  { icon: BookOpen,      label: 'Luyện theo câu',  to: '/practice' },
+  { icon: GraduationCap, label: 'Thi thử',         to: '/test' },
 ];
 
 interface SidebarProps {
@@ -13,77 +14,103 @@ interface SidebarProps {
 }
 
 export function Sidebar({ mode = 'desktop' }: SidebarProps) {
+  const { logout } = useAuth() as any;
+  const navigate = useNavigate();
+
+  /* ── Mobile bottom nav ── */
   if (mode === 'mobile') {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-background-primary/80 backdrop-blur-3xl border-t border-white/10 z-[60] flex items-center justify-around px-6 safe-area-pb">
+      <nav
+        className="fixed bottom-0 left-0 right-0 h-16 z-[60] flex items-center justify-around px-4"
+        style={{
+          background: '#FFFFFF',
+          borderTop: '1px solid var(--border-light)',
+          boxShadow: '0 -2px 10px rgba(0,0,0,0.04)',
+        }}
+      >
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === '/'}
             className={({ isActive }) =>
               cn(
-                "flex flex-col items-center gap-1.5 p-2 transition-all duration-500 rounded-2xl",
-                isActive ? "text-primary" : "text-white/40"
+                'flex flex-col items-center gap-1 px-4 py-1.5 rounded-lg transition-colors',
+                isActive ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'
               )
             }
           >
-            {({ isActive }) => (
-              <>
-                <div className={cn(
-                  "p-2 rounded-xl transition-all duration-500",
-                  isActive ? "bg-primary/20 scale-110 shadow-[0_0_15px_rgba(124,58,237,0.3)]" : "bg-transparent"
-                )}>
-                  <item.icon className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
-              </>
-            )}
+            <item.icon className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">{item.label}</span>
           </NavLink>
         ))}
       </nav>
     );
   }
 
+  /* ── Desktop sidebar ── */
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 glass sidebar-blur border-r border-white/10 z-50 flex flex-col overflow-hidden">
-      <div className="p-10">
-        <h1 className="text-3xl font-black gradient-text font-heading tracking-tighter italic drop-shadow-lg">
-          LexiLearn
-        </h1>
-        <p className="text-[10px] text-primary font-black tracking-[0.3em] uppercase mt-1 opacity-80">
-          IELTS Speaking Pro
-        </p>
+    <aside
+      className="fixed left-0 top-0 h-screen w-[256px] flex flex-col z-50"
+      style={{
+        background: '#FFFFFF',
+        borderRight: '1px solid var(--border-light)',
+      }}
+    >
+      {/* Logo */}
+      <div className="px-6 pt-6 pb-5">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'var(--primary)', color: '#fff' }}
+          >
+            <span className="text-base font-extrabold font-heading">L</span>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold font-heading leading-none" style={{ color: 'var(--text-primary)' }}>
+              Lexi<span style={{ color: 'var(--primary)' }}>Learn</span>
+            </h1>
+            <p className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              IELTS Speaking AI
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 px-6 space-y-4 pt-10">
+      {/* Divider */}
+      <div className="mx-5 h-[1px]" style={{ background: 'var(--border-light)' }} />
+
+      {/* Nav */}
+      <nav className="flex-1 px-4 pt-5 space-y-1">
+        <p className="section-label px-3 pb-2">Menu</p>
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === '/'}
             className={({ isActive }) =>
-              cn(
-                "flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-500 group relative overflow-hidden",
-                isActive 
-                  ? "bg-primary text-white shadow-2xl shadow-primary/30" 
-                  : "text-white/40 hover:bg-white/[0.05] hover:text-white"
-              )
+              cn('nav-item w-full', isActive ? 'nav-item--active' : '')
             }
           >
-            <item.icon className="w-5 h-5 transition-transform group-hover:scale-125 duration-500" />
-            <span className="font-extrabold text-sm uppercase tracking-widest">{item.label}</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-6 border-t border-white/5 space-y-3 bg-white/[0.02]">
-        <button className="w-full flex items-center gap-4 px-6 py-4 text-white/40 hover:text-white hover:bg-white/[0.05] rounded-2xl transition-all duration-500 group">
-          <Settings className="w-5 h-5 group-hover:rotate-45 duration-700" />
-          <span className="font-extrabold text-xs uppercase tracking-widest">Cài đặt</span>
+      {/* Bottom */}
+      <div className="px-4 pb-5 pt-3 space-y-1" style={{ borderTop: '1px solid var(--border-light)' }}>
+        <button className="nav-item w-full">
+          <Settings className="w-[18px] h-[18px]" />
+          <span>Cài đặt</span>
         </button>
-        <button className="w-full flex items-center gap-4 px-6 py-4 text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all duration-500 group">
-          <LogOut className="w-5 h-5 group-hover:-translate-x-1 duration-500" />
-          <span className="font-extrabold text-xs uppercase tracking-widest">Đăng xuất</span>
+        <button
+          onClick={() => { logout?.(); navigate('/login', { replace: true }); }}
+          className="nav-item w-full"
+          style={{ color: 'var(--error)' }}
+        >
+          <LogOut className="w-[18px] h-[18px]" />
+          <span>Đăng xuất</span>
         </button>
       </div>
     </aside>
