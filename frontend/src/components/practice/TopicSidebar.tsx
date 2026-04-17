@@ -17,52 +17,86 @@ interface TopicSidebarProps {
 export function TopicSidebar({ topics, activeTopicId, onSelectTopic, isLoading }: TopicSidebarProps) {
   if (isLoading) {
     return (
-      <div className="w-80 flex flex-col gap-3 shrink-0">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-20 bg-white/5 rounded-2xl animate-pulse" />
+      <div className="practice-topics">
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF', padding: '4px 2px 8px' }}>
+          Đang tải chủ đề...
+        </div>
+        {[1,2,3,4,5].map((i) => (
+          <div key={i} className="skeleton" style={{ height: 62, animationDelay: `${i*0.06}s` }} />
         ))}
       </div>
     );
   }
 
-  return (
-    <div className="w-80 flex flex-col gap-3 shrink-0 overflow-y-auto max-h-[calc(100vh-200px)] pr-2 scrollbar-none">
-      {topics.map((topic) => (
-        <button
-          key={topic.id}
-          onClick={() => onSelectTopic(topic.id)}
-          className={`group flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300 text-left ${
-            activeTopicId === topic.id
-              ? 'bg-primary/20 border-primary ring-1 ring-primary/50'
-              : 'bg-white/5 border-white/10 hover:bg-white/[0.08] hover:border-white/20'
-          }`}
+  if (topics.length === 0) {
+    return (
+      <div className="practice-topics">
+        <div
+          style={{
+            padding: '24px 16px',
+            textAlign: 'center',
+            background: '#F5F7FA',
+            borderRadius: 8,
+            border: '1px dashed #D5DBE5',
+          }}
         >
-          <div className={`p-2.5 rounded-xl shrink-0 transition-transform duration-500 group-hover:scale-110 ${
-            activeTopicId === topic.id ? 'bg-primary text-white' : 'bg-white/10 text-text-secondary'
-          }`}>
-            <BookOpen className="w-5 h-5" />
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <h4 className={`font-bold text-sm truncate ${activeTopicId === topic.id ? 'text-white' : 'text-text-secondary group-hover:text-white'}`}>
-              {topic.title}
-            </h4>
-            <p className="text-[11px] text-text-secondary font-medium mt-1 line-clamp-2 opacity-60">
-              {topic.description}
-            </p>
-          </div>
-          
-          <ChevronRight className={`w-4 h-4 mt-1 transition-transform duration-300 ${
-            activeTopicId === topic.id ? 'text-primary' : 'text-white/20 group-hover:translate-x-1'
-          }`} />
-        </button>
-      ))}
-      
-      {topics.length === 0 && (
-        <div className="p-8 text-center glass-card">
-          <p className="text-sm text-text-secondary italic">Không tìm thấy chủ đề nào</p>
+          <BookOpen size={20} color="#9CA3AF" style={{ margin: '0 auto 8px' }} />
+          <p style={{ fontSize: 12, color: '#9CA3AF' }}>Không có chủ đề</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="practice-topics">
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9CA3AF', padding: '0 2px 8px' }}>
+        Chủ đề ({topics.length})
+      </div>
+
+      {topics.map((topic) => {
+        const isActive = activeTopicId === topic.id;
+        return (
+          <button
+            key={topic.id}
+            className={`topic-item${isActive ? ' active' : ''}`}
+            onClick={() => onSelectTopic(topic.id)}
+          >
+            <div
+              style={{
+                padding: '7px',
+                borderRadius: 7,
+                background: isActive ? 'rgba(67,97,238,0.15)' : '#F0F2F5',
+                color: isActive ? '#4361EE' : '#9CA3AF',
+                flexShrink: 0,
+              }}
+            >
+              <BookOpen size={13} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: isActive ? '#3451D1' : '#1A1D2B',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {topic.title}
+              </div>
+              <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {topic.description}
+              </div>
+            </div>
+            <ChevronRight
+              size={13}
+              color={isActive ? '#4361EE' : '#D5DBE5'}
+              style={{ flexShrink: 0, transition: 'transform 0.15s' }}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 }

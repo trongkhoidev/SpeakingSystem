@@ -1,90 +1,130 @@
 import React from 'react';
-import { BookOpen, GraduationCap, Zap, ChevronRight } from 'lucide-react';
+import { BookOpen, GraduationCap, Zap, ArrowRight, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function FeatureCards() {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-      {/* Practice Mode Card */}
-      <div 
-        onClick={() => navigate('/practice')}
-        className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 to-indigo-500/10 border border-white/10 p-8 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer hover:border-primary/30"
-      >
-        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-primary/20 blur-3xl group-hover:bg-primary/30 transition-colors" />
-        <div className="relative z-10 space-y-4">
-          <div className="p-4 bg-primary rounded-2xl w-fit shadow-lg shadow-primary/20 rotate-3 group-hover:rotate-0 transition-transform">
-            <BookOpen className="w-8 h-8 text-white" />
+    <div>
+      <h2 className="text-lg font-semibold font-heading mb-4" style={{ color: 'var(--text-primary)' }}>
+        Bắt đầu luyện tập
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {/* Practice Card */}
+        <div
+          onClick={() => navigate('/practice')}
+          className="card p-6 cursor-pointer group transition-all duration-200 hover:border-blue-300"
+          style={{ border: '1px solid var(--border-light)' }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'var(--primary-bg)' }}
+            >
+              <BookOpen className="w-5 h-5" style={{ color: 'var(--primary)' }} />
+            </div>
+            <span className="badge badge--primary text-[10px]">Mỗi ngày</span>
           </div>
-          <div>
-            <h3 className="text-2xl font-bold text-white group-hover:text-primary transition-colors">Luyện tập theo câu</h3>
-            <p className="text-text-secondary mt-2 leading-relaxed">
-              Lựa chọn các chủ đề forecast mới nhất để thực hành phát âm và trả lời câu hỏi IELTS Part 1, 2, 3.
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 pt-2">
-            {[1, 2, 3].map(part => (
-              <button 
-                key={part}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/practice/${part}`);
+
+          <h3 className="text-base font-semibold font-heading mb-1.5" style={{ color: 'var(--text-primary)' }}>
+            Luyện tập theo câu
+          </h3>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+            Lựa chọn chủ đề IELTS forecast mới nhất, thực hành phát âm và trả lời câu hỏi Part 1, 2, 3.
+          </p>
+
+          {/* Part tags */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {[
+              { label: 'Part 1', to: '/practice/1' },
+              { label: 'Part 2', to: '/practice/2' },
+              { label: 'Part 3', to: '/practice/3' },
+              { label: 'Câu của bạn', to: '/practice/custom' },
+            ].map((tag) => (
+              <button
+                key={tag.label}
+                onClick={(e) => { e.stopPropagation(); navigate(tag.to); }}
+                className="text-xs font-medium px-3 py-1 rounded-full transition-colors"
+                style={{
+                  background: 'var(--bg-body)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-light)',
                 }}
-                className="bg-white/5 hover:bg-white/10 border border-white/5 px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary transition-all hover:text-white"
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'var(--primary-bg)';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--primary-text)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--primary)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'var(--bg-body)';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-light)';
+                }}
               >
-                Part {part}
+                {tag.label}
               </button>
             ))}
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/practice/custom`);
-              }}
-              className="bg-white/5 hover:bg-white/10 border border-white/5 px-4 py-1.5 rounded-full text-xs font-bold text-text-secondary transition-all hover:text-white"
-            >
-              Tự thêm câu hỏi
-            </button>
           </div>
 
-          <div className="flex items-center gap-2 text-primary font-bold pt-2 group-hover:gap-4 transition-all">
+          <div
+            className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all"
+            style={{ color: 'var(--primary)' }}
+          >
+            <Mic className="w-4 h-4" />
             Thực hành ngay
-            <ChevronRight className="w-5 h-5 fill-current" />
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </div>
         </div>
-      </div>
 
-      {/* Test Exam Card */}
-      <div 
-        onClick={() => navigate('/test')}
-        className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500/10 to-purple-400/10 border border-white/10 p-8 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer hover:border-indigo-400/30"
-      >
-        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-indigo-500/20 blur-3xl group-hover:bg-indigo-500/30 transition-colors" />
-        <div className="relative z-10 space-y-4">
-          <div className="p-4 bg-indigo-500 rounded-2xl w-fit shadow-lg shadow-indigo-500/20 -rotate-3 group-hover:rotate-0 transition-transform">
-            <GraduationCap className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-white group-hover:text-indigo-400 transition-colors">Thi thử IELTS</h3>
-            <p className="text-text-secondary mt-2 leading-relaxed">
-              Mô phỏng kỳ thi thật với examiner AI. Nhận báo cáo chi tiết về Band score và chiến lược nâng band.
-            </p>
+        {/* Test Card */}
+        <div
+          onClick={() => navigate('/test')}
+          className="card p-6 cursor-pointer group transition-all duration-200 hover:border-purple-300"
+          style={{ border: '1px solid var(--border-light)' }}
+        >
+          <div className="flex items-start justify-between mb-4">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: '#F3F0FF' }}
+            >
+              <GraduationCap className="w-5 h-5" style={{ color: '#7C3AED' }} />
+            </div>
+            <span className="badge badge--purple text-[10px]">AI Examiner</span>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/5">
-             <div className="p-2 bg-indigo-400/20 rounded-xl">
-               <Zap className="w-5 h-5 text-indigo-400" />
-             </div>
-             <div>
-               <div className="text-sm font-bold text-white">Full Mock Test</div>
-               <div className="text-[10px] uppercase font-semibold text-text-secondary tracking-widest">15 - 20 Phút</div>
-             </div>
+          <h3 className="text-base font-semibold font-heading mb-1.5" style={{ color: 'var(--text-primary)' }}>
+            Thi thử IELTS
+          </h3>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+            Mô phỏng kỳ thi thật với Examiner AI. Nhận báo cáo chi tiết về Band score và chiến lược nâng điểm.
+          </p>
+
+          {/* Info row */}
+          <div
+            className="flex items-center gap-3 p-3 rounded-xl mb-4"
+            style={{ background: 'var(--bg-body)', border: '1px solid var(--border-light)' }}
+          >
+            <div
+              className="p-2 rounded-lg"
+              style={{ background: '#F3F0FF' }}
+            >
+              <Zap className="w-4 h-4" style={{ color: '#7C3AED' }} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Full Mock Test</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>15 – 20 phút</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-indigo-400 font-bold group-hover:gap-4 transition-all">
+          <div
+            className="flex items-center gap-2 text-sm font-semibold group-hover:gap-3 transition-all"
+            style={{ color: '#7C3AED' }}
+          >
+            <GraduationCap className="w-4 h-4" />
             Bắt đầu thi thử
-            <ChevronRight className="w-5 h-5 fill-current" />
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </div>
         </div>
       </div>

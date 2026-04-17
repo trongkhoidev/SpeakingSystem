@@ -1,4 +1,4 @@
-import { Mic, CheckCircle } from 'lucide-react';
+import { Mic, CheckCircle, Sparkles } from 'lucide-react';
 
 interface Question {
   id: string;
@@ -18,64 +18,100 @@ interface QuestionGridProps {
 export function QuestionGrid({ questions, onSelectQuestion, isLoading }: QuestionGridProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-28 bg-white/5 rounded-2xl animate-pulse" />
+      <>
+        {[1,2,3,4,5,6].map((i) => (
+          <div
+            key={i}
+            className="skeleton"
+            style={{ height: 100, animationDelay: `${i*0.06}s`, borderRadius: 10 }}
+          />
         ))}
+      </>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div
+        style={{
+          gridColumn: '1 / -1',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
+          padding: '60px 24px',
+          background: '#FFFFFF',
+          border: '1px dashed #D5DBE5',
+          borderRadius: 10,
+        }}
+      >
+        <div style={{ padding: 12, background: '#F5F7FA', borderRadius: 10 }}>
+          <Mic size={22} color="#9CA3AF" />
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontSize: 13.5, fontWeight: 600, color: '#6B7280' }}>Chưa có câu hỏi</p>
+          <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>Hãy chọn một chủ đề để bắt đầu</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 content-start overflow-y-auto max-h-[calc(100vh-200px)] p-1 pr-3 custom-scrollbar">
+    <>
       {questions.map((question) => (
-        <button
+        <div
           key={question.id}
+          className="question-card"
           onClick={() => onSelectQuestion(question)}
-          className="group relative flex flex-col items-start gap-4 p-5 bg-white/5 rounded-2xl border border-white/10 hover-lift transition-all hover:border-primary/40 hover:bg-white/[0.08] text-left"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && onSelectQuestion(question)}
         >
-          {/* Status Indicator */}
+          {/* Answered mark */}
           {question.answered && (
-            <div className="absolute top-4 right-4 text-green-400">
-               <div className="flex flex-col items-end gap-1">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">{question.score ? `Band ${question.score}` : 'Hoàn thành'}</span>
-               </div>
+            <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <CheckCircle size={14} color="#22A06B" />
+              {question.score && (
+                <span className="badge badge--success">Band {question.score}</span>
+              )}
             </div>
           )}
 
-          <h4 className="font-bold text-white pr-10 leading-tight group-hover:text-primary transition-colors">
+          {/* Question text */}
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#1A1D2B', lineHeight: 1.55, paddingRight: question.answered ? 60 : 0 }}>
             {question.text}
-          </h4>
-          
-          <div className="flex items-center gap-2 mt-auto">
-            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-white/10 text-text-secondary rounded-lg">
-              Part {question.part}
-            </span>
+          </p>
+
+          {/* Footer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 'auto' }}>
+            <span className="badge badge--primary">Part {question.part}</span>
             {question.is_custom && (
-              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-indigo-500/30 text-indigo-300 rounded-lg">
-                Câu bạn thêm
+              <span className="badge badge--purple" style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Sparkles size={10} />
+                Câu của bạn
               </span>
             )}
-            
-            <div className="flex-1" />
-            
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/20 text-primary text-xs font-bold transition-all group-hover:bg-primary group-hover:text-white shadow-inner-white">
-              <Mic className="w-3.5 h-3.5" />
-              <span>Luyện ngay</span>
+            <div style={{ flex: 1 }} />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '4px 12px',
+                background: '#EEF0FD',
+                color: '#3451D1',
+                borderRadius: 6,
+                fontSize: 11.5,
+                fontWeight: 600,
+              }}
+            >
+              <Mic size={11} />
+              Luyện ngay
             </div>
           </div>
-        </button>
-      ))}
-      
-      {questions.length === 0 && (
-        <div className="col-span-full py-16 flex flex-col items-center gap-4 glass-card border-dashed">
-          <div className="p-4 bg-white/5 rounded-2xl">
-            <Mic className="w-8 h-8 text-text-secondary opacity-30" />
-          </div>
-          <p className="text-text-secondary font-medium italic opacity-50">Hãy chọn một chủ đề để bắt đầu luyện tập</p>
         </div>
-      )}
-    </div>
+      ))}
+    </>
   );
 }

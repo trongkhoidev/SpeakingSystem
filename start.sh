@@ -70,10 +70,13 @@ fi
 
 # Install/Update Backend dependencies
 echo -e "${YELLOW}📦 Checking Backend dependencies...${NC}"
-venv/bin/pip install -q -r requirements.txt > ../logs/backend-install.log 2>&1
-
-# Start FastAPI backend
-venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 > ../logs/backend.log 2>&1 &
+if [ -d "venv/Scripts" ]; then
+    venv/Scripts/pip install -q -r requirements.txt > ../logs/backend-install.log 2>&1
+    venv/Scripts/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 > ../logs/backend.log 2>&1 &
+else
+    venv/bin/pip install -q -r requirements.txt > ../logs/backend-install.log 2>&1
+    venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 > ../logs/backend.log 2>&1 &
+fi
 BACKEND_PID=$!
 cd ..
 

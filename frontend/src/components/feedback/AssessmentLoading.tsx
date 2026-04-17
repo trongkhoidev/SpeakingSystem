@@ -1,12 +1,32 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Mic2, Brain, Check, Loader2 } from 'lucide-react';
+import { Shield, Mic2, Brain, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STAGES = [
-  { id: 'gatekeeper', label: 'Bảo vệ đầu vào', description: 'Đang xác thực nội dung câu trả lời...', icon: Shield, color: 'text-blue-400' },
-  { id: 'azure', label: 'Phân tích âm học', description: 'Azure AI đang chấm điểm phát âm...', icon: Mic2, color: 'text-emerald-400' },
-  { id: 'llm', label: 'Đánh giá ngôn ngữ', description: 'DeepSeek đang phân tích ngữ pháp & từ vựng...', icon: Brain, color: 'text-indigo-400' }
+  {
+    id: 'gatekeeper',
+    label: 'Xác thực nội dung',
+    description: 'Đang kiểm tra chất lượng câu trả lời...',
+    icon: Shield,
+    color: '#4361EE',
+    bg: '#EEF0FD',
+  },
+  {
+    id: 'azure',
+    label: 'Phân tích âm học',
+    description: 'Azure AI đang chấm điểm phát âm...',
+    icon: Mic2,
+    color: '#22A06B',
+    bg: '#E6F9F0',
+  },
+  {
+    id: 'llm',
+    label: 'Đánh giá ngôn ngữ',
+    description: 'AI đang phân tích ngữ pháp và từ vựng...',
+    icon: Brain,
+    color: '#7C3AED',
+    bg: '#F3F0FF',
+  },
 ];
 
 export function AssessmentLoading() {
@@ -15,99 +35,118 @@ export function AssessmentLoading() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentStage((prev) => (prev < STAGES.length - 1 ? prev + 1 : prev));
-    }, 2000); // Simulate stage progress every 2s
+    }, 2500);
     return () => clearInterval(interval);
   }, []);
 
+  const stage = STAGES[currentStage];
+
   return (
-    <div className="flex flex-col items-center justify-center p-12 md:p-20 space-y-12 text-center">
-      <div className="relative">
-        {/* Pulsing ring background */}
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="absolute inset-0 -m-8 bg-primary/20 rounded-full blur-3xl"
-        />
-        
-        <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-white/[0.03] border border-white/5 flex items-center justify-center shadow-2xl backdrop-blur-3xl overflow-hidden group">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStage}
-              initial={{ y: 20, opacity: 0, scale: 0.8 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: -20, opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className={cn("p-6", STAGES[currentStage].color)}
-            >
-              {STAGES[currentStage].icon === Shield && <Shield className="w-16 h-16 md:w-20 md:h-20" />}
-              {STAGES[currentStage].icon === Mic2 && <Mic2 className="w-16 h-16 md:w-20 md:h-20" />}
-              {STAGES[currentStage].icon === Brain && <Brain className="w-16 h-16 md:w-20 md:h-20" />}
-            </motion.div>
-          </AnimatePresence>
-          
-          <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 border-4 border-transparent border-t-primary rounded-full"
+    <div className="flex flex-col items-center justify-center py-14 gap-8 text-center">
+      {/* Central spinner */}
+      <div className="relative w-28 h-28 flex items-center justify-center">
+        <div className="orbit-ring" />
+        <div className="orbit-ring-2" />
+
+        <div
+          className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500"
+          style={{ background: stage.bg, border: `1px solid ${stage.color}30` }}
+        >
+          <div key={currentStage} className="animate-scale-in" style={{ color: stage.color }}>
+            <stage.icon className="w-9 h-9" />
+          </div>
+        </div>
+      </div>
+
+      {/* Text */}
+      <div key={`text-${currentStage}`} className="animate-fade-up space-y-2 max-w-xs">
+        <h3 className="text-xl font-bold font-heading" style={{ color: 'var(--text-primary)' }}>
+          {stage.label}
+        </h3>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          {stage.description}
+        </p>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <div className="ai-dot" />
+          <div className="ai-dot" />
+          <div className="ai-dot" />
+        </div>
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex gap-2">
+        {STAGES.map((s, i) => (
+          <div
+            key={i}
+            className="rounded-full transition-all duration-500"
+            style={{
+              height: 4,
+              width: i === currentStage ? 28 : 10,
+              background: i <= currentStage ? stage.color : 'var(--border-light)',
+            }}
           />
-        </div>
+        ))}
       </div>
 
-      <div className="space-y-6 max-w-sm">
-        <div className="space-y-2">
-          <h3 className="text-2xl font-black text-white font-heading">
-            {STAGES[currentStage].label}
-          </h3>
-          <p className="text-text-secondary font-medium text-sm leading-relaxed opacity-60">
-            {STAGES[currentStage].description}
-          </p>
-        </div>
-
-        <div className="flex gap-2 justify-center">
-          {STAGES.map((_, i) => (
-            <div 
-              key={i} 
+      {/* Stage checklist */}
+      <div className="w-full max-w-xs space-y-2">
+        {STAGES.map((s, i) => {
+          const isDone    = i < currentStage;
+          const isCurrent = i === currentStage;
+          return (
+            <div
+              key={s.id}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-700",
-                i === currentStage ? "w-10 bg-primary shadow-[0_0_15px_rgba(124,58,237,0.5)]" : 
-                i < currentStage ? "w-6 bg-emerald-500/40" : "w-6 bg-white/10"
-              )} 
-            />
-          ))}
-        </div>
-      </div>
+                'flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-400',
+                isCurrent && 'scale-[1.02]'
+              )}
+              style={{
+                background: isCurrent ? s.bg : isDone ? '#E6F9F0' : 'var(--bg-body)',
+                borderColor: isCurrent ? `${s.color}40` : isDone ? '#22A06B30' : 'var(--border-light)',
+                opacity: i > currentStage ? 0.4 : 1,
+              }}
+            >
+              {/* Icon */}
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: isDone ? '#E6F9F0' : isCurrent ? s.bg : 'var(--bg-card)',
+                  color: isDone ? '#22A06B' : isCurrent ? s.color : 'var(--text-muted)',
+                }}
+              >
+                {isDone ? (
+                  <Check className="w-4 h-4" />
+                ) : isCurrent ? (
+                  <div
+                    className="w-4 h-4 rounded-full border-2 border-transparent animate-spin"
+                    style={{ borderTopColor: s.color }}
+                  />
+                ) : (
+                  <s.icon className="w-4 h-4" />
+                )}
+              </div>
 
-      <div className="grid grid-cols-1 gap-4 w-full">
-        {STAGES.map((stage, i) => (
-          <div 
-            key={stage.id}
-            className={cn(
-              "flex items-center gap-4 p-5 rounded-2xl border transition-all duration-500",
-              i === currentStage ? "bg-white/5 border-white/10 scale-105 shadow-xl" :
-              i < currentStage ? "bg-emerald-500/5 border-emerald-500/10 opacity-60" :
-              "bg-transparent border-transparent opacity-20"
-            )}
-          >
-            <div className={cn(
-              "p-2 rounded-xl",
-              i === currentStage ? "bg-primary/20 text-primary" :
-              i < currentStage ? "bg-emerald-500/20 text-emerald-400" :
-              "bg-white/5 text-white/20"
-            )}>
-              {i < currentStage ? <Check className="w-5 h-5" /> : (i === currentStage ? <Loader2 className="w-5 h-5 animate-spin" /> : <stage.icon className="w-5 h-5" />)}
-            </div>
-            <div className="text-left">
-              <p className={cn(
-                "text-xs font-black uppercase tracking-widest mb-0.5",
-                i === currentStage ? "text-white" : "text-white/40"
-              )}>{stage.label}</p>
-              {i === currentStage && (
-                <p className="text-[10px] text-text-tertiary font-bold">{stage.description}</p>
+              {/* Label */}
+              <div className="text-left flex-1">
+                <p
+                  className="text-xs font-semibold"
+                  style={{ color: isCurrent ? 'var(--text-primary)' : isDone ? 'var(--text-secondary)' : 'var(--text-muted)' }}
+                >
+                  {s.label}
+                </p>
+                {isCurrent && (
+                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    Đang xử lý...
+                  </p>
+                )}
+              </div>
+
+              {isDone && (
+                <span className="badge badge--success text-[9px]">Xong</span>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
