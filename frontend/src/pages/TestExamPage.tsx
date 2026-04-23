@@ -2,14 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Settings2, Plus, ChevronRight, Calendar, Award,
   Zap, FileText, TrendingUp, History, ArrowRight, Lightbulb,
-  Clock, Target, Sparkles, BookOpen, Info
+  Clock, Target, Sparkles, BookOpen, Info, CheckCircle
 } from 'lucide-react';
-import { TestSetupModal, TestConfig } from '../components/test/TestSetupModal';
+import { TestWizardModal, TestWizardConfig } from '../components/test/TestWizardModal';
 import { TestRunner } from '../components/test/TestRunner';
 import { TestReport } from '../components/test/TestReport';
 import { BandBadge } from '../components/shared/BandBadge';
+import { ExamModeCard } from '../components/test/ExamModeCard';
+import { TestPerformanceCard } from '../components/test/TestPerformanceCard';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface TestHistoryItem {
   id: string;
@@ -75,13 +78,12 @@ export function TestExamPage() {
   const [selectedMode, setSelectedMode]     = useState<ExamModeId>('full');
   const [activeSession, setActiveSession]   = useState<any | null>(null);
   const [questions, setQuestions]           = useState<any[]>([]);
-  const [testConfig, setTestConfig]         = useState<TestConfig | null>(null);
+  const [testConfig, setTestConfig]         = useState<TestWizardConfig | null>(null);
   const [showReport, setShowReport]         = useState<any | null>(null);
 
   const [examSets, setExamSets]             = useState<ExamSet[]>([]);
   const [loadingExamSets, setLoadingExamSets] = useState(false);
   const [selectedExamSetId, setSelectedExamSetId] = useState<string | null>(null);
-  const [testMode, setTestMode]             = useState<'sets' | 'random'>('sets');
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -113,15 +115,16 @@ export function TestExamPage() {
     fetchExamSets();
   }, [fetchExamSets]);
 
-  const startTest = async (config: TestConfig) => {
+  const startTest = async (config: TestWizardConfig) => {
     try {
-      const res = await api.post('/test/start', { mode: selectedMode, ...config });
+      const res = await api.post('/test/start', { mode: config.mode, ...config });
       setActiveSession(res.data.session);
       setQuestions(res.data.questions);
       setTestConfig(config);
       setIsSetupOpen(false);
     } catch (e) {
       console.error('Failed to start test:', e);
+      toast.error('Failed to start test');
     }
   };
 
@@ -195,184 +198,160 @@ export function TestExamPage() {
     <div className="space-y-8 animate-in fade-in duration-500">
 
       {/* ── Header ── */}
-      <div className="space-y-3">
-         <h1 className="text-[32px] font-bold text-[#1A1D2B] font-heading tracking-tight">IELTS Mock Test</h1>
-         <p className="text-[15px] text-[#6B7280]">Trải nghiệm cảm giác thi thật với các bộ đề được chuẩn bị sẵn và áp lực thời gian.</p>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-gray-900">IELTS Mock Test</h1>
+        <p className="text-gray-600 max-w-2xl">Experience a real exam environment with timed questions and instant AI feedback on your speaking performance.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className="lg:col-span-3 space-y-6">
-          {/* Mode Toggle */}
-          <div className="flex bg-[#F0F2F5] p-1 rounded-xl w-fit">
-            <button 
-              onClick={() => setTestMode('sets')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all",
-                testMode === 'sets' ? "bg-white text-[#4361EE] shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
-              )}
-            >
-              Chọn bộ đề
-            </button>
-            <button 
-              onClick={() => setTestMode('random')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all",
-                testMode === 'random' ? "bg-white text-[#4361EE] shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
-              )}
-            >
-              Ngẫu nhiên
-            </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Exam Modes */}
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Target className="w-4 h-4 text-blue-600" />
+              Choose Your Test Mode
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {EXAM_MODES.map(mode => (
+                <ExamModeCard
+                  key={mode.id}
+                  id={mode.id}
+                  icon={mode.icon}
+                  title={mode.title}
+                  description={mode.description}
+                  duration="11-14 min"
+                  iconColor={mode.iconColor}
+                  accentColor={mode.accentColor}
+                  onClick={() => openSetup(mode.id)}
+                />
+              ))}
+            </div>
           </div>
 
-          {testMode === 'sets' ? (
-            <div className="grid grid-cols-1 gap-4">
-              {loadingExamSets ? (
-                [1,2,3].map(i => <div key={i} className="h-24 skeleton rounded-2xl" />)
-              ) : (
-                examSets.map(set => (
-                  <button 
-                    key={set.id}
-                    onClick={() => setSelectedExamSetId(set.id)}
-                    className={cn(
-                      "group p-6 bg-white border rounded-2xl flex items-center justify-between transition-all text-left shadow-sm",
-                      selectedExamSetId === set.id ? "border-[#4361EE] ring-1 ring-[#4361EE]" : "border-[#E8ECF1] hover:border-[#4361EE]/50"
-                    )}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-                        set.difficulty === 'easy' ? "bg-[#E6F9F0] text-[#1A8F5C]" :
-                        set.difficulty === 'hard' ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#EEF0FD] text-[#4361EE]"
-                      )}>
-                        <Zap className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <div className="text-[16px] font-bold text-[#1A1D2B] mb-1">{set.name}</div>
-                        <div className="text-[13px] text-[#6B7280] line-clamp-1 mb-2">{set.description}</div>
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">
-                            <Clock className="w-3.5 h-3.5" /> {set.estimated_minutes} phút
-                          </span>
-                          <span className={cn(
-                            "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded",
-                            set.difficulty === 'easy' ? "bg-[#E6F9F0] text-[#1A8F5C]" :
-                            set.difficulty === 'hard' ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#EEF0FD] text-[#4361EE]"
-                          )}>
-                            {set.difficulty}
-                          </span>
+          {/* Exam Sets */}
+          {examSets.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-purple-600" />
+                Practice Sets
+              </h2>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {loadingExamSets ? (
+                  <div className="space-y-2">
+                    {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : (
+                  examSets.map(set => (
+                    <button 
+                      key={set.id}
+                      onClick={() => {
+                        setSelectedExamSetId(set.id);
+                        startTest({
+                          mode: 'full',
+                          examinerVoice: 'female-uk',
+                          questionCount: 5,
+                          followUpEnabled: true,
+                        });
+                      }}
+                      className={cn(
+                        "w-full p-4 bg-white border-2 rounded-lg transition-all text-left",
+                        selectedExamSetId === set.id 
+                          ? "border-blue-500 bg-blue-50" 
+                          : "border-gray-200 hover:border-blue-300"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{set.name}</p>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-1">{set.description}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                            <Clock className="w-3 h-3" />
+                            <span>{set.estimated_minutes} minutes</span>
+                            <span className={cn(
+                              "px-2 py-0.5 rounded font-semibold",
+                              set.difficulty === 'easy' ? "bg-emerald-100 text-emerald-700" :
+                              set.difficulty === 'hard' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+                            )}>
+                              {set.difficulty}
+                            </span>
+                          </div>
                         </div>
+                        {selectedExamSetId === set.id && (
+                          <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        )}
                       </div>
-                    </div>
-                    <div className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                      selectedExamSetId === set.id ? "border-[#4361EE] bg-[#4361EE]" : "border-[#E8ECF1]"
-                    )}>
-                      {selectedExamSetId === set.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-               {EXAM_MODES.map(mode => (
-                  <button
-                    key={mode.id}
-                    onClick={() => openSetup(mode.id)}
-                    className="group card p-6 text-left hover:border-[#4361EE] transition-all"
-                  >
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", mode.iconBg)}>
-                       <mode.icon size={22} color={mode.iconColor} />
-                    </div>
-                    <h3 className="text-[16px] font-bold text-[#1A1D2B] mb-1">{mode.title}</h3>
-                    <p className="text-[12px] text-[#6B7280] leading-relaxed line-clamp-2">{mode.description}</p>
-                  </button>
-               ))}
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           )}
-
-          <button 
-            disabled={testMode === 'sets' && !selectedExamSetId}
-            onClick={() => {
-               if (testMode === 'random') {
-                 openSetup('full');
-               } else {
-                 const selectedSet = examSets.find(s => s.id === selectedExamSetId);
-                 if (selectedSet) {
-                    startTest({
-                      mode: 'full',
-                      examinerVoice: localStorage.getItem('voice_pref') || 'female-uk',
-                      questionCount: 5,
-                      followUpEnabled: true,
-                      exam_set_id: selectedSet.id
-                    } as any);
-                 }
-               }
-            }}
-            className="btn btn-primary w-full py-4 h-14 text-[15px] font-bold shadow-xl shadow-indigo-100"
-          >
-            Bắt đầu bài thi ngay <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="card p-6 border-none shadow-lg space-y-4">
-             <p className="section-title flex items-center gap-2">
-               <Info className="w-4 h-4 text-[#4361EE]" /> Quy định thi thử
-             </p>
-             <ul className="space-y-3">
-               {[
-                 "Mỗi câu hỏi có giới hạn thời gian (30-60s).",
-                 "Hệ thống tự động nộp bài khi hết giờ.",
-                 "Không thể quay lại câu hỏi trước đó.",
-                 "Cần đảm bảo micro hoạt động tốt."
-               ].map((text, i) => (
-                 <li key={i} className="flex items-start gap-2 text-[13px] text-[#6B7280]">
-                   <div className="w-1.5 h-1.5 bg-[#4361EE] rounded-full mt-1.5 flex-shrink-0" />
-                   {text}
-                 </li>
-               ))}
-             </ul>
+        {/* Side Panel */}
+        <div className="space-y-6">
+          {/* Rules */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 space-y-4">
+            <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Info className="w-4 h-4 text-blue-600" />
+              Test Rules
+            </p>
+            <ul className="space-y-3">
+              {[
+                "Each question has a time limit (30-60s)",
+                "Auto-submit when time expires",
+                "Cannot go back to previous questions",
+                "Ensure microphone is working"
+              ].map((text, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 flex-shrink-0" />
+                  {text}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <section className="space-y-4">
+          {/* Recent Tests */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="section-title mb-0">Lịch sử thi</p>
-              <button onClick={fetchHistory} className="text-[#4361EE] hover:underline text-[12px] font-bold uppercase tracking-wider">Làm mới</button>
+              <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <History className="w-4 h-4 text-blue-600" />
+                Recent Tests
+              </p>
+              <button onClick={fetchHistory} className="text-xs font-semibold text-blue-600 hover:text-blue-700">
+                Refresh
+              </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
               {loading ? (
-                [1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-xl" />)
+                <div className="space-y-2">
+                  {[1,2,3].map(i => <div key={i} className="h-12 bg-gray-200 rounded-lg animate-pulse" />)}
+                </div>
               ) : history.length === 0 ? (
-                <div className="p-8 text-center bg-white border border-dashed border-[#E8ECF1] rounded-2xl">
-                   <p className="text-[12.5px] text-[#9CA3AF]">Chưa có lịch sử thi</p>
+                <div className="p-6 text-center bg-gray-50 border border-dashed border-gray-300 rounded-lg">
+                  <p className="text-sm text-gray-600">No test history yet. Start your first test!</p>
                 </div>
               ) : (
                 history.slice(0, 5).map((item) => (
-                  <div 
+                  <TestPerformanceCard
                     key={item.id}
+                    test={{
+                      id: item.id,
+                      createdAt: item.created_at,
+                      mode: item.mode,
+                      overallBand: item.overall_band,
+                    }}
                     onClick={() => handleViewReport(item.id)}
-                    className="card p-4 flex items-center justify-between cursor-pointer hover:border-[#4361EE] transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <BandBadge score={item.overall_band || 0} size="sm" />
-                      <div>
-                        <div className="text-[14px] font-bold text-[#1A1D2B]">{item.mode} Test</div>
-                        <div className="text-[11px] text-[#9CA3AF] flex items-center gap-1">
-                           <Calendar size={12} /> {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-[#E8ECF1]" />
-                  </div>
+                  />
                 ))
               )}
             </div>
-          </section>
+          </div>
         </div>
       </div>
 
-      <TestSetupModal
+      <TestWizardModal
         isOpen={isSetupOpen}
         onClose={() => setIsSetupOpen(false)}
         onStart={startTest}
