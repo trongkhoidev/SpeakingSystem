@@ -124,7 +124,7 @@ export function AdminDashboard() {
           <StatCard icon={Activity} label="Lượt luyện tập" value={stats?.totalPractices || 0} color="#10B981" />
           <StatCard icon={Star} label="Độ hài lòng" value={`${stats?.avgSatisfaction || 0}/5`} color="#F59E0B" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' } as any}>
           <StatCard icon={Clock} label="TG luyện tập trung bình" value={`${stats?.avgDurationPerAnswer || 0}s`} color="#8B5CF6" />
           <StatCard icon={Users} label="Active 7 ngày" value={stats?.activeUsers7d || 0} color="#0EA5E9" />
           <StatCard icon={Activity} label="Tỷ lệ giữ chân 7d" value={`${stats?.retention7dPercent || 0}%`} color="#14B8A6" />

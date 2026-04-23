@@ -26,7 +26,6 @@ import { RecordingModal } from '../components/audio/RecordingModal';
 import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/Button';
 import { ModeCard } from '../components/practice/ModeCard';
 import { QuestionDisplay } from '../components/practice/QuestionDisplay';
 import { RecordingControl } from '../components/practice/RecordingControl';

@@ -13,7 +13,7 @@ import { CueCard } from './CueCard';
 import { AudioRecorder } from '../audio/AudioRecorder';
 import { WaveformVisualizer } from '../audio/WaveformVisualizer';
 import { LiveTranscript } from '../audio/LiveTranscript';
-import { TestConfig } from './TestSetupModal';
+import { TestWizardConfig } from './TestWizardModal';
 import { cn } from '../../lib/utils';
 import { useTranscription } from '../../hooks/useTranscription';
 import api from '../../lib/api';
@@ -38,7 +38,7 @@ interface Question {
 
 interface TestRunnerProps {
   sessionId: string;
-  config: TestConfig;
+  config: TestWizardConfig;
   questions: Question[];
   onComplete: () => void;
 }
