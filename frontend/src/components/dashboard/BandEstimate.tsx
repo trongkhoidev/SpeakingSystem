@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TrendingUp, ChevronDown, Lightbulb } from 'lucide-react';
 
 interface BandEstimateProps {

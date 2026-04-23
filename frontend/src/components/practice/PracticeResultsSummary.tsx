@@ -1,5 +1,4 @@
-import React from 'react';
-import { CheckCircle2, TrendingUp, BarChart3, ArrowRight } from 'lucide-react';
+import { CheckCircle2, BarChart3, ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface PracticeResult {
@@ -87,7 +86,7 @@ export function PracticeResultsSummary({
           Detailed Results
         </h3>
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {results.map((result, idx) => (
+          {results.map((result) => (
             <div
               key={result.questionId}
               className="border border-gray-200 rounded-lg p-3 space-y-2"

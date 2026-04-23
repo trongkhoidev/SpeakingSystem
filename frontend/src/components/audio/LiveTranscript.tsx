@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface LiveTranscriptProps {
   interimText: string;
   finalText: string;
-  status?: 'idle' | 'connecting' | 'listening' | 'failed' | 'closed' | 'unsupported';
+  status?: 'idle' | 'connecting' | 'listening' | 'failed' | 'closed' | 'unsupported' | 'fallback';
   isFallback?: boolean;
   className?: string;
 }

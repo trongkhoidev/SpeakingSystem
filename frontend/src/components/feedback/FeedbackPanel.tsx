@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { OverallBandBadge } from './OverallBandBadge';
 import { WordChips } from './WordChips';
 import { AzureDashboard } from './AzureDashboard';
 import { ReasoningCards } from './ReasoningCards';
 import { ModelAnswer } from './ModelAnswer';
 import { AudioPlayer } from '../audio/AudioPlayer';
 import { Check, ArrowRight, Share2, Download } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 
 interface AssessmentResult {

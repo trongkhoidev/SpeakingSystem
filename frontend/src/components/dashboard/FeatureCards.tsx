@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { BookOpen, GraduationCap, Zap, ArrowRight, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

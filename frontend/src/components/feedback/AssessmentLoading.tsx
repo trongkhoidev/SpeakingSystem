@@ -75,7 +75,7 @@ export function AssessmentLoading() {
 
       {/* Progress dots */}
       <div className="flex gap-2">
-        {STAGES.map((s, i) => (
+        {STAGES.map((_, i) => (
           <div
             key={i}
             className="rounded-full transition-all duration-500"
