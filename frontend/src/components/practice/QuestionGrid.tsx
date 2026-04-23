@@ -2,7 +2,7 @@ import { Mic, CheckCircle, Sparkles } from 'lucide-react';
 
 interface Question {
   id: string;
-  text: string;
+  question_text: string;
   part: number;
   is_custom: boolean;
   answered?: boolean;
@@ -80,7 +80,7 @@ export function QuestionGrid({ questions, onSelectQuestion, isLoading }: Questio
 
           {/* Question text */}
           <p style={{ fontSize: 13, fontWeight: 500, color: '#1A1D2B', lineHeight: 1.55, paddingRight: question.answered ? 60 : 0 }}>
-            {question.text}
+            {question.question_text}
           </p>
 
           {/* Footer */}

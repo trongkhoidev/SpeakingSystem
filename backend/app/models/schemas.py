@@ -19,6 +19,7 @@ class User(UserBase):
     id: str
     day_streak: int = 0
     estimated_band: float = 0.0
+    role: str = "user"
     created_at: Optional[str] = None
 
     class Config:
@@ -47,6 +48,10 @@ class Topic(TopicBase):
 
     class Config:
         from_attributes = True
+
+
+class TopicWithQuestions(Topic):
+    questions: List[Question] = []
 
 
 class QuestionBase(BaseModel):
@@ -86,12 +91,12 @@ class TestSessionBase(BaseModel):
 
 
 class TestSessionCreate(TestSessionBase):
-    pass
+    exam_set_id: Optional[str] = None
 
 
 class TestSession(TestSessionBase):
     id: str
-    user_id: str
+    user_id: Optional[str] = None
     overall_band: Optional[float] = None
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
@@ -111,3 +116,68 @@ class DashboardResponse(BaseModel):
     bandEstimate: dict
     forecast: List[dict]
     heatmap: List[dict]
+
+
+class UserFeedbackCreate(BaseModel):
+    user_id: Optional[str] = None
+    rating: int
+    comment: Optional[str] = None
+    category: Optional[str] = "General"
+
+
+class UserFeedback(UserFeedbackCreate):
+    id: str
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+
+class GuestTrialStatus(BaseModel):
+    guest_id: str
+    practice_count: int
+    test_count: int
+    practice_remaining: int
+    test_remaining: int
+
+
+class PlanInfo(BaseModel):
+    code: str
+    name: str
+    monthly_tokens: int
+    practice_cost: int
+    test_start_cost: int
+    daily_trial_bonus: int
+    price_vnd: int
+
+
+class UsageStatus(BaseModel):
+    plan_code: str
+    plan_name: str
+    price_vnd: int
+    token_balance: int
+    monthly_token_used: int
+    monthly_token_limit: int
+    lifetime_token_used: int
+    costs: dict
+    daily_trial_bonus: int
+    social_reward_tokens: int
+    facebook_rewarded: bool
+    x_rewarded: bool
+
+
+class ExamSetBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    estimated_minutes: int = 14
+    difficulty: str = "medium"
+
+
+class ExamSet(ExamSetBase):
+    id: str
+    question_ids_json: str
+    is_active: bool
+    created_at: str
+
+    class Config:
+        from_attributes = True

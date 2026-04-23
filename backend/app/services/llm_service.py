@@ -171,10 +171,10 @@ Return as JSON with keys: score, feedback, error_count, error_types, complexity_
         except Exception as e:
             logger.error(f"Stage 2 analysis failed: {str(e)}")
             return {
-                "FC": {"score": 5.0, "feedback": "...", "key_findings": []},
-                "LR": {"score": 5.0, "feedback": "...", "band_8_plus_words": []},
-                "GRA": {"score": 5.0, "feedback": "...", "error_types": [], "complexity": "Intermediate"},
-                "model_answer": "N/A"
+                "FC": {"score": 0.0, "feedback": "Không thể phân tích lúc này. Vui lòng thử lại.", "key_findings": []},
+                "LR": {"score": 0.0, "feedback": "Không thể phân tích lúc này. Vui lòng thử lại.", "band_8_plus_words": []},
+                "GRA": {"score": 0.0, "feedback": "Không thể phân tích lúc này. Vui lòng thử lại.", "error_types": [], "complexity": "N/A"},
+                "model_answer": "Không thể tạo câu trả lời mẫu lúc này."
             }
 
     async def explain_more(
@@ -234,23 +234,42 @@ Return as JSON with keys: score, feedback, error_count, error_types, complexity_
             }
 
     async def _call_gemini_stage2(self, prompt: str) -> Dict[str, Any]:
-        """Call Google Gemini 2.0 Flash for Stage 2."""
-        
+        """Call Google Gemini 2.0 Flash for Stage 2 with enforced IELTS examiner context."""
+
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-        
+
         params = {"key": self.gemini_key}
         payload = {
+            "system_instruction": {
+                "parts": [{
+                    "text": (
+                        "Bạn là giám khảo IELTS Speaking chuyên nghiệp, tuân thủ NGHIÊM NGẶT các tiêu chí chấm điểm "
+                        "chính thức của British Council/IDP. "
+                        "Quy tắc bắt buộc:\n"
+                        "1. Chỉ chấm điểm dựa trên transcript thực tế được cung cấp - KHÔNG bịa đặt nội dung.\n"
+                        "2. Score phải là số thực 0.0-9.0 theo thang IELTS (bước 0.5), dựa trên bằng chứng cụ thể.\n"
+                        "3. Feedback phải bằng Tiếng Việt, cụ thể, có dẫn chứng từ bài nói.\n"
+                        "4. model_answer phải là bản Band 8.5+ đầy đủ, dùng cấu trúc AREA và từ nối signposting.\n"
+                        "5. KHÔNG trả về placeholder, '...', hoặc 'N/A' trong bất kỳ trường nào.\n"
+                        "6. Output phải là JSON hợp lệ - không có markdown code fences."
+                    )
+                }]
+            },
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.3,
                 "response_mime_type": "application/json"
             }
         }
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.post(url, params=params, json=payload, timeout=45) as response:
                 result = await response.json()
+                if "error" in result:
+                    raise ValueError(f"Gemini API error: {result['error'].get('message', 'Unknown')}")
                 text = result["candidates"][0]["content"]["parts"][0]["text"]
+                # Strip markdown fences in case model disobeys mime type instruction
+                text = text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
                 return json.loads(text)
 
     async def _call_openai_stage2(self, prompt: str) -> Dict[str, Any]:

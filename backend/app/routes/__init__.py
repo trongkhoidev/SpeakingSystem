@@ -8,6 +8,9 @@ from .topic_routes import router as topic_router
 from .question_routes import router as question_router
 from .test_routes import router as test_router
 from .audio_routes import router as audio_router
+from .admin_routes import router as admin_router
+from .billing_routes import router as billing_router
+from .practice_routes import router as practice_router
 
 main_router = APIRouter(prefix="/api/v1")
 main_router.include_router(speech_router)
@@ -17,5 +20,8 @@ main_router.include_router(topic_router)
 main_router.include_router(question_router)
 main_router.include_router(test_router)
 main_router.include_router(audio_router)
+main_router.include_router(admin_router)
+main_router.include_router(billing_router)
+main_router.include_router(practice_router)
 
 __all__ = ["main_router"]

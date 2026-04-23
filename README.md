@@ -179,6 +179,16 @@ SpeakingSystem/
 └── tech.md                  # Technical specifications
 ```
 
+## Data Integrity and Sourcing
+
+This repository enforces real-world data sourcing for analytics and AI outputs.
+
+- Source registry: `docs/real_world_data_source_map.md`
+- Integrity policy and JSON contract: `docs/real_world_data_policy.md`
+- Agent behavior rules: `AGENTS.md`
+
+Key rule: if a value cannot be verified from an approved source, return it as incomplete (`null` + `status: "incomplete"`), never synthetic.
+
 ## 🔄 API Documentation
 
 ### POST /api/v1/speech/process-speech

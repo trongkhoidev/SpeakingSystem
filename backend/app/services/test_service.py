@@ -1,9 +1,10 @@
 """Test session management service."""
 
 from sqlalchemy.orm import Session
-from app.models.sqlalchemy_models import TestSession, TestAnswer, Question
+from app.models.sqlalchemy_models import TestSession, TestAnswer, Question, ExamSet
 from app.models.schemas import TestSessionCreate
 import uuid
+import json
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import func
@@ -29,6 +30,30 @@ class TestService:
     @staticmethod
     def get_test_questions(db: Session, config: TestSessionCreate) -> List[Question]:
         """Get questions for a test based on config."""
+        
+        # Scenario 1: Using a specific Exam Set
+        if config.exam_set_id:
+            exam_set = db.query(ExamSet).filter(ExamSet.id == config.exam_set_id).first()
+            if exam_set:
+                try:
+                    q_ids_dict = json.loads(exam_set.question_ids_json)
+                    # Merge all part lists into one sequential list
+                    all_ids = []
+                    for part in ['part1', 'part2', 'part3']:
+                        if part in q_ids_dict:
+                            all_ids.extend(q_ids_dict[part])
+                    
+                    # Fetch questions in order
+                    questions = []
+                    for q_id in all_ids:
+                        q = db.query(Question).filter(Question.id == q_id).first()
+                        if q:
+                            questions.append(q)
+                    return questions
+                except Exception as e:
+                    print(f"Error parsing exam set questions: {e}")
+
+        # Scenario 2: Random / Custom selection
         question_count = config.question_count or 5
         parts = config.parts_included
         
@@ -73,19 +98,37 @@ class TestService:
         
         results = []
         for answer in answers:
+            # Parse the raw JSON text stored in llm_result
+            try:
+                import json as _json
+                parsed_feedback = _json.loads(answer.llm_result) if answer.llm_result else None
+            except (ValueError, TypeError):
+                parsed_feedback = None
+
             results.append({
                 "id": answer.id,
                 "question": answer.question.question_text if answer.question else "N/A",
                 "part": answer.part_number or (answer.question.part if answer.question else None),
                 "overall_band": float(answer.overall_band) if answer.overall_band else None,
-                "feedback": answer.llm_result
+                "feedback": parsed_feedback
             })
-            
+
+        # Derive a meaningful test type label from session config
+        parts = session.parts_included
+        if parts == 1:
+            test_type = "Part 1"
+        elif parts == 2:
+            test_type = "Part 2"
+        elif parts == 3:
+            test_type = "Part 3"
+        else:
+            test_type = "Full Test"
+
         return {
             "id": session.id,
             "date": str(session.started_at),
             "overallBand": float(session.overall_band) if session.overall_band else None,
-            "type": "Full Test",
+            "type": test_type,
             "results": results
         }
 

@@ -22,7 +22,7 @@ const FEATURES = [
 ];
 
 export function LoginPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, error, loginGuest, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || '/';
@@ -133,6 +133,80 @@ export function LoginPage() {
 
         {/* Google login button */}
         <GoogleLoginButton />
+
+        <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
+          <div style={{ flex: 1, height: 1, background: '#F0F2F5' }} />
+          <span style={{ padding: '0 12px', fontSize: 12, color: '#9CA3AF', fontWeight: 500 }}>HOẶC</span>
+          <div style={{ flex: 1, height: 1, background: '#F0F2F5' }} />
+        </div>
+
+        <button
+          onClick={loginGuest}
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            background: '#FFFFFF',
+            border: '1,5px solid #4361EE',
+            borderRadius: 12,
+            color: '#4361EE',
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = '#F0F3FF';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = '#FFFFFF';
+          }}
+        >
+          <Zap size={18} />
+          Bắt đầu dùng thử ngay
+        </button>
+
+        {/* Error Message */}
+        {error && (
+          <div
+            style={{
+              marginTop: 20,
+              padding: '12px 16px',
+              background: '#FEF2F2',
+              border: '1px solid #FEE2E2',
+              borderRadius: 8,
+              display: 'flex',
+              gap: 10,
+              alignItems: 'flex-start',
+            }}
+          >
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: '#EF4444',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 900,
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            >
+              !
+            </div>
+            <div style={{ fontSize: 13, color: '#991B1B', lineHeight: 1.5, fontWeight: 500 }}>
+              {error}
+            </div>
+          </div>
+        )}
 
         {/* Trust signals */}
         <div

@@ -2,6 +2,8 @@
 .env
 *.env
 .env.*
+docs/ai
+.agent
 
 # Python
 __pycache__/

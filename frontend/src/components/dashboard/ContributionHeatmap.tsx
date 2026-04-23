@@ -100,10 +100,24 @@ export function ContributionHeatmap({ data, isLoading = false }: ContributionHea
 
   /* Build data array: col-major (column = week) */
   const cells: number[] = Array.from({ length: COLS * ROWS }, (_, i) => {
-    if (data.length > 0) return data[i]?.count ?? 0;
-    // demo data — heavier toward recent
-    const colPct = Math.floor(i / ROWS) / COLS;
-    return Math.random() < 0.55 ? (colPct > 0.6 ? Math.ceil(Math.random() * 5) : Math.ceil(Math.random() * 3)) : 0;
+    if (!data || data.length === 0) return 0;
+
+    // Calculate date for this cell (i)
+    // col = week, row = day
+    const c = Math.floor(i / ROWS);
+    const r = i % ROWS;
+    
+    // Days ago from today to the end of the grid
+    const totalDays = COLS * ROWS;
+    const daysAgo = (totalDays - 1) - (c * ROWS + r);
+    
+    const targetDate = new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    targetDate.setDate(targetDate.getDate() - daysAgo);
+    const dateStr = targetDate.toISOString().split('T')[0];
+
+    const dayData = data.find(d => d.date === dateStr);
+    return dayData ? dayData.count : 0;
   });
 
   return (
@@ -151,32 +165,35 @@ export function ContributionHeatmap({ data, isLoading = false }: ContributionHea
       </div>
 
       {/* ── Mini Stats Row ── */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        <StatMini
-          icon={Flame}
-          iconColor="#B45309"
-          iconBg="#FFF7E6"
-          label="Tổng thời gian học"
-          value="120 giờ"
-          sub="Tích lũy"
-        />
-        <StatMini
-          icon={Trophy}
-          iconColor="#7C3AED"
-          iconBg="#F3F0FF"
-          label="Chuỗi ngày cao nhất"
-          value="15 ngày"
-          sub="Kỷ lục"
-        />
-        <StatMini
-          icon={Clock}
-          iconColor="#1A8F5C"
-          iconBg="#E6F9F0"
-          label="Thời gian học tập"
-          value="T6, 20:00"
-          sub="Hôm nay"
-        />
-      </div>
+      {/* ── Mini Stats Row — Hidden if no real data yet ── */}
+      {data && data.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+          <StatMini
+            icon={Flame}
+            iconColor="#B45309"
+            iconBg="#FFF7E6"
+            label="Tổng lượt luyện"
+            value={`${data.reduce((acc, curr) => acc + curr.count, 0)}`}
+            sub="Lần thực hành"
+          />
+          <StatMini
+            icon={Trophy}
+            iconColor="#7C3AED"
+            iconBg="#F3F0FF"
+            label="Chuỗi ngày"
+            value={`${data.filter(d => d.count > 0).length} ngày`}
+            sub="Hoạt động"
+          />
+          <StatMini
+            icon={Clock}
+            iconColor="#1A8F5C"
+            iconBg="#E6F9F0"
+            label="Cập nhật"
+            value="Vừa xong"
+            sub="Hôm nay"
+          />
+        </div>
+      )}
 
       {/* ── Heatmap chart ── */}
       {isLoading ? (

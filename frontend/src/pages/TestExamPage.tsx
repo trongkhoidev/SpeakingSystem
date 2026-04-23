@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Settings2, Plus, ChevronRight, Calendar, Award,
-  Zap, FileText, TrendingUp, History, ArrowRight, Lightbulb
+  Zap, FileText, TrendingUp, History, ArrowRight, Lightbulb,
+  Clock, Target, Sparkles, BookOpen, Info
 } from 'lucide-react';
 import { TestSetupModal, TestConfig } from '../components/test/TestSetupModal';
 import { TestRunner } from '../components/test/TestRunner';
 import { TestReport } from '../components/test/TestReport';
 import { BandBadge } from '../components/shared/BandBadge';
 import api from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface TestHistoryItem {
   id: string;
@@ -56,6 +58,14 @@ const EXAM_MODES = [
   },
 ];
 
+interface ExamSet {
+  id: string;
+  name: string;
+  description: string;
+  estimated_minutes: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
 type ExamModeId = 'full' | 'part1' | 'part2' | 'part3';
 
 export function TestExamPage() {
@@ -68,7 +78,13 @@ export function TestExamPage() {
   const [testConfig, setTestConfig]         = useState<TestConfig | null>(null);
   const [showReport, setShowReport]         = useState<any | null>(null);
 
+  const [examSets, setExamSets]             = useState<ExamSet[]>([]);
+  const [loadingExamSets, setLoadingExamSets] = useState(false);
+  const [selectedExamSetId, setSelectedExamSetId] = useState<string | null>(null);
+  const [testMode, setTestMode]             = useState<'sets' | 'random'>('sets');
+
   const fetchHistory = async () => {
+    setLoading(true);
     try {
       const res = await api.get('/test/history');
       setHistory(res.data);
@@ -79,9 +95,27 @@ export function TestExamPage() {
     }
   };
 
+  const fetchExamSets = useCallback(async () => {
+    setLoadingExamSets(true);
+    try {
+      const res = await api.get('/test/exam-sets');
+      setExamSets(res.data);
+      if (res.data.length > 0) setSelectedExamSetId(res.data[0].id);
+    } catch (e) {
+      console.error('Failed to fetch exam sets:', e);
+    } finally {
+      setLoadingExamSets(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+    fetchExamSets();
+  }, [fetchExamSets]);
+
   const startTest = async (config: TestConfig) => {
     try {
-      const res = await api.post('/test/start', { mode: selectedMode, config });
+      const res = await api.post('/test/start', { mode: selectedMode, ...config });
       setActiveSession(res.data.session);
       setQuestions(res.data.questions);
       setTestConfig(config);
@@ -103,11 +137,18 @@ export function TestExamPage() {
     }
   };
 
-  useEffect(() => { fetchHistory(); }, []);
-
   const openSetup = (mode: ExamModeId = 'full') => {
     setSelectedMode(mode);
     setIsSetupOpen(true);
+  };
+
+  const handleViewReport = async (sessionId: string) => {
+    try {
+      const res = await api.get(`/test/${sessionId}/report`);
+      setShowReport(res.data);
+    } catch (e) {
+      console.error('Failed to fetch report:', e);
+    }
   };
 
   /* ── Test running state ── */
@@ -151,280 +192,184 @@ export function TestExamPage() {
 
   /* ── Main view ── */
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }} className="page-enter">
+    <div className="space-y-8 animate-in fade-in duration-500">
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1A1D2B', fontFamily: 'Outfit, sans-serif' }}>
-            Thi thử <span style={{ color: '#4361EE' }}>IELTS Speaking</span>
-          </h1>
-          <p style={{ fontSize: 13.5, color: '#6B7280', marginTop: 5, maxWidth: 560 }}>
-            Mô phỏng chính xác môi trường phòng thi thực tế với giám khảo AI và bộ câu hỏi cập nhật theo dự đoán.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-          <button className="btn btn-ghost">
-            <Settings2 size={15} />
-            Cài đặt giọng đọc
-          </button>
-          <button className="btn btn-primary" onClick={() => openSetup()}>
-            <Plus size={15} />
-            Tạo bài thi mới
-          </button>
-        </div>
+      <div className="space-y-3">
+         <h1 className="text-[32px] font-bold text-[#1A1D2B] font-heading tracking-tight">IELTS Mock Test</h1>
+         <p className="text-[15px] text-[#6B7280]">Trải nghiệm cảm giác thi thật với các bộ đề được chuẩn bị sẵn và áp lực thời gian.</p>
       </div>
 
-      {/* ── Exam mode cards (4 columns) ── */}
-      <section>
-        <p className="section-title">Chọn chế độ thi</p>
-        <div className="stats-grid">
-          {EXAM_MODES.map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => openSetup(mode.id)}
-              className="card hover-lift"
-              style={{
-                cursor: 'pointer',
-                textAlign: 'left',
-                borderTop: `2px solid ${mode.accentColor}`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                padding: '18px 20px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = mode.accentColor;
-                (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px ${mode.accentColor}20`;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
-              }}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="lg:col-span-3 space-y-6">
+          {/* Mode Toggle */}
+          <div className="flex bg-[#F0F2F5] p-1 rounded-xl w-fit">
+            <button 
+              onClick={() => setTestMode('sets')}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all",
+                testMode === 'sets' ? "bg-white text-[#4361EE] shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
+              )}
             >
-              {/* Icon */}
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 11,
-                  background: mode.iconBg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <mode.icon size={22} color={mode.iconColor} />
-              </div>
-
-              {/* Text */}
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#1A1D2B', fontFamily: 'Outfit, sans-serif', marginBottom: 4 }}>
-                  {mode.title}
-                </div>
-                <div style={{ fontSize: 12.5, color: '#6B7280', lineHeight: 1.55 }}>
-                  {mode.description}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  marginTop: 'auto',
-                  padding: '8px 16px',
-                  background: mode.iconBg,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: mode.iconColor,
-                  width: '100%',
-                  justifyContent: 'center',
-                }}
-              >
-                Bắt đầu ngay
-                <ArrowRight size={14} />
-              </div>
+              Chọn bộ đề
             </button>
-          ))}
-        </div>
-      </section>
+            <button 
+              onClick={() => setTestMode('random')}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all",
+                testMode === 'random' ? "bg-white text-[#4361EE] shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
+              )}
+            >
+              Ngẫu nhiên
+            </button>
+          </div>
 
-      {/* ── History section ── */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <p className="section-title" style={{ marginBottom: 0 }}>Lịch sử thi thử</p>
-          <button className="btn btn-ghost" style={{ fontSize: 12, padding: '5px 12px' }}>
-            Xem tất cả
+          {testMode === 'sets' ? (
+            <div className="grid grid-cols-1 gap-4">
+              {loadingExamSets ? (
+                [1,2,3].map(i => <div key={i} className="h-24 skeleton rounded-2xl" />)
+              ) : (
+                examSets.map(set => (
+                  <button 
+                    key={set.id}
+                    onClick={() => setSelectedExamSetId(set.id)}
+                    className={cn(
+                      "group p-6 bg-white border rounded-2xl flex items-center justify-between transition-all text-left shadow-sm",
+                      selectedExamSetId === set.id ? "border-[#4361EE] ring-1 ring-[#4361EE]" : "border-[#E8ECF1] hover:border-[#4361EE]/50"
+                    )}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                        set.difficulty === 'easy' ? "bg-[#E6F9F0] text-[#1A8F5C]" :
+                        set.difficulty === 'hard' ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#EEF0FD] text-[#4361EE]"
+                      )}>
+                        <Zap className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-[16px] font-bold text-[#1A1D2B] mb-1">{set.name}</div>
+                        <div className="text-[13px] text-[#6B7280] line-clamp-1 mb-2">{set.description}</div>
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">
+                            <Clock className="w-3.5 h-3.5" /> {set.estimated_minutes} phút
+                          </span>
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded",
+                            set.difficulty === 'easy' ? "bg-[#E6F9F0] text-[#1A8F5C]" :
+                            set.difficulty === 'hard' ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#EEF0FD] text-[#4361EE]"
+                          )}>
+                            {set.difficulty}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                      selectedExamSetId === set.id ? "border-[#4361EE] bg-[#4361EE]" : "border-[#E8ECF1]"
+                    )}>
+                      {selectedExamSetId === set.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+               {EXAM_MODES.map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => openSetup(mode.id)}
+                    className="group card p-6 text-left hover:border-[#4361EE] transition-all"
+                  >
+                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", mode.iconBg)}>
+                       <mode.icon size={22} color={mode.iconColor} />
+                    </div>
+                    <h3 className="text-[16px] font-bold text-[#1A1D2B] mb-1">{mode.title}</h3>
+                    <p className="text-[12px] text-[#6B7280] leading-relaxed line-clamp-2">{mode.description}</p>
+                  </button>
+               ))}
+            </div>
+          )}
+
+          <button 
+            disabled={testMode === 'sets' && !selectedExamSetId}
+            onClick={() => {
+               if (testMode === 'random') {
+                 openSetup('full');
+               } else {
+                 const selectedSet = examSets.find(s => s.id === selectedExamSetId);
+                 if (selectedSet) {
+                    startTest({
+                      mode: 'full',
+                      examinerVoice: localStorage.getItem('voice_pref') || 'female-uk',
+                      questionCount: 5,
+                      followUpEnabled: true,
+                      exam_set_id: selectedSet.id
+                    } as any);
+                 }
+               }
+            }}
+            className="btn btn-primary w-full py-4 h-14 text-[15px] font-bold shadow-xl shadow-indigo-100"
+          >
+            Bắt đầu bài thi ngay <ArrowRight className="w-4 h-4 ml-2" />
           </button>
         </div>
 
-        <div className="card" style={{ overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', border: '3px solid #E8ECF1', borderTopColor: '#4361EE', animation: 'spin 0.9s linear infinite' }} />
-              <p style={{ fontSize: 12.5, color: '#9CA3AF' }}>Đang tải lịch sử...</p>
-            </div>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="card p-6 border-none shadow-lg space-y-4">
+             <p className="section-title flex items-center gap-2">
+               <Info className="w-4 h-4 text-[#4361EE]" /> Quy định thi thử
+             </p>
+             <ul className="space-y-3">
+               {[
+                 "Mỗi câu hỏi có giới hạn thời gian (30-60s).",
+                 "Hệ thống tự động nộp bài khi hết giờ.",
+                 "Không thể quay lại câu hỏi trước đó.",
+                 "Cần đảm bảo micro hoạt động tốt."
+               ].map((text, i) => (
+                 <li key={i} className="flex items-start gap-2 text-[13px] text-[#6B7280]">
+                   <div className="w-1.5 h-1.5 bg-[#4361EE] rounded-full mt-1.5 flex-shrink-0" />
+                   {text}
+                 </li>
+               ))}
+             </ul>
+          </div>
 
-          ) : history.length > 0 ? (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #E8ECF1', background: '#F8F9FB' }}>
-                  {['Ngày thi', 'Chế độ', 'Trạng thái', 'Kết quả', ''].map((h, i) => (
-                    <th
-                      key={i}
-                      style={{
-                        padding: '10px 16px',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: '#9CA3AF',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        textAlign: i === 3 ? 'center' : i === 4 ? 'right' : 'left',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((item, idx) => (
-                  <tr
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="section-title mb-0">Lịch sử thi</p>
+              <button onClick={fetchHistory} className="text-[#4361EE] hover:underline text-[12px] font-bold uppercase tracking-wider">Làm mới</button>
+            </div>
+            <div className="space-y-3">
+              {loading ? (
+                [1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-xl" />)
+              ) : history.length === 0 ? (
+                <div className="p-8 text-center bg-white border border-dashed border-[#E8ECF1] rounded-2xl">
+                   <p className="text-[12.5px] text-[#9CA3AF]">Chưa có lịch sử thi</p>
+                </div>
+              ) : (
+                history.slice(0, 5).map((item) => (
+                  <div 
                     key={item.id}
-                    style={{
-                      borderBottom: idx < history.length - 1 ? '1px solid #F0F2F5' : 'none',
-                      transition: 'background 0.1s',
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#FAFBFF'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                    onClick={() => handleViewReport(item.id)}
+                    className="card p-4 flex items-center justify-between cursor-pointer hover:border-[#4361EE] transition-all"
                   >
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ padding: 7, background: '#F0F2F5', borderRadius: 7 }}>
-                          <Calendar size={13} color="#6B7280" />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1D2B' }}>
-                            {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                          </div>
-                          <div style={{ fontSize: 11, color: '#9CA3AF' }}>
-                            {new Date(item.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
+                    <div className="flex items-center gap-4">
+                      <BandBadge score={item.overall_band || 0} size="sm" />
+                      <div>
+                        <div className="text-[14px] font-bold text-[#1A1D2B]">{item.mode} Test</div>
+                        <div className="text-[11px] text-[#9CA3AF] flex items-center gap-1">
+                           <Calendar size={12} /> {new Date(item.created_at).toLocaleDateString('vi-VN')}
                         </div>
                       </div>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span className="badge badge--primary" style={{ textTransform: 'uppercase' }}>
-                        {item.mode}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span className="badge badge--success">Hoàn thành</span>
-                    </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      <BandBadge score={item.overall_band || 0} size="sm" />
-                    </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <button
-                        onClick={async () => {
-                          const res = await api.get(`/test/${item.id}/report`);
-                          setShowReport(res.data);
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          background: '#EEF0FD',
-                          color: '#4361EE',
-                          border: 'none',
-                          borderRadius: 7,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          marginLeft: 'auto',
-                        }}
-                      >
-                        Xem báo cáo <ChevronRight size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-          ) : (
-            /* ── Empty state ── */
-            <div style={{ padding: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 16,
-                  background: '#F0F2F5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <History size={28} color="#9CA3AF" />
-              </div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#1A1D2B', marginBottom: 6 }}>
-                  Chưa có bài thi nào
-                </div>
-                <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6, maxWidth: 320 }}>
-                  Thực hiện bài thi thử đầu lên để đánh giá trình độ và lộ trình cải thiện từ AI.
-                </p>
-              </div>
-              <button className="btn btn-primary" onClick={() => openSetup()} style={{ marginTop: 4 }}>
-                Bắt đầu ngay →
-              </button>
+                    </div>
+                    <ChevronRight size={16} className="text-[#E8ECF1]" />
+                  </div>
+                ))
+              )}
             </div>
-          )}
+          </section>
         </div>
-      </section>
-
-      {/* ── Pro tip banner ── */}
-      <div
-        className="card"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-          padding: '18px 24px',
-          borderLeft: '3px solid #4361EE',
-          background: '#F8F9FE',
-        }}
-      >
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 11,
-            background: '#EEF0FD',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          <Lightbulb size={20} color="#4361EE" />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1A1D2B', marginBottom: 4 }}>
-            Mẹo phòng thi: Sự tự tin là chìa khóa
-          </div>
-          <p style={{ fontSize: 12.5, color: '#6B7280', lineHeight: 1.6 }}>
-            Trong IELTS Speaking, không có câu trả lời đúng hay sai. Hãy thoải mái chia sẻ trải nghiệm của bạn và sử dụng đa dạng cấu trúc ngữ pháp để "khoe" vốn ngôn ngữ nhé!
-          </p>
-        </div>
-        <button className="btn btn-ghost" style={{ flexShrink: 0, fontSize: 12.5 }}>
-          Xem tài liệu ôn tập
-        </button>
       </div>
 
       <TestSetupModal

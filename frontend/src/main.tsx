@@ -9,6 +9,8 @@ import { Loader2 } from 'lucide-react';
 const DashboardPage   = lazy(() => import('./pages/DashboardPage').then(m   => ({ default: m.DashboardPage })));
 const PracticeModePage = lazy(() => import('./pages/PracticeModePage').then(m => ({ default: m.PracticeModePage })));
 const TestExamPage    = lazy(() => import('./pages/TestExamPage').then(m    => ({ default: m.TestExamPage })));
+const AdminDashboard  = lazy(() => import('./pages/AdminDashboard').then(m  => ({ default: m.AdminDashboard })));
+const PlansPage       = lazy(() => import('./pages/PlansPage').then(m       => ({ default: m.PlansPage })));
 
 const LoadingScreen = () => (
   <div
@@ -47,6 +49,13 @@ export function App() {
                 <Route path="/practice/:partId"     element={<PracticeModePage />} />
                 <Route path="/test"                 element={<TestExamPage />} />
                 <Route path="/test/:sessionId"      element={<TestExamPage />} />
+                <Route path="/plans"                element={<PlansPage />} />
+              </Route>
+            </Route>
+
+            <Route element={<ProtectedRoute adminOnly />}>
+              <Route element={<AppLayout />}>
+                <Route path="/admin" element={<AdminDashboard />} />
               </Route>
             </Route>
 

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { BandBadge } from '../shared/BandBadge';
-import { Button } from '../shared/Button';
+import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 
 interface QuestionResult {
@@ -41,170 +41,154 @@ export function TestReport({ date, overallBand, type, results }: TestReportProps
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const stats = [
-    { label: 'Fluency', score: 7.5, color: 'text-primary' },
-    { label: 'Lexical', score: 7.0, color: 'text-secondary' },
-    { label: 'Grammar', score: 8.0, color: 'text-accent' },
-    { label: 'Pronunciation', score: 7.5, color: 'text-emerald-400' },
+    { label: 'Fluency', score: 7.5, color: 'text-[#4361EE]' },
+    { label: 'Lexical', score: 7.0, color: 'text-[#7C3AED]' },
+    { label: 'Grammar', score: 8.0, color: 'text-[#F59E0B]' },
+    { label: 'Pronunciation', score: 7.5, color: 'text-[#1A8F5C]' },
   ];
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
       {/* Hero Result Section */}
-      <div className="glass-card p-10 border-primary/20 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 relative overflow-hidden text-center md:text-left">
-         <div className="absolute top-0 right-0 p-8 opacity-10 blur-sm">
-            <Award className="w-64 h-64 text-primary" />
+      <div className="card p-10 bg-white border-none shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
+         <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
+            <Award className="w-64 h-64 text-[#4361EE]" />
          </div>
 
-         <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
-            <div className="flex flex-col items-center gap-4">
-               <BandBadge score={overallBand} size="lg" className="scale-150 mb-4" />
-               <div className="px-6 py-2 bg-primary/20 border border-primary/30 rounded-full text-primary font-black uppercase tracking-widest text-[10px]">
-                  Estimated Overall Band
+         <div className="flex flex-col items-center gap-4 relative z-10">
+            <div className="w-32 h-32 bg-[#EEF0FD] rounded-full flex items-center justify-center">
+               <div className="text-5xl font-bold text-[#4361EE]">{overallBand}</div>
+            </div>
+            <div className="px-4 py-1.5 bg-[#EEF0FD] rounded-full text-[#4361EE] font-bold uppercase tracking-wider text-[10px]">
+               Overall Band Estimate
+            </div>
+         </div>
+
+         <div className="flex-grow space-y-6 relative z-10 text-center md:text-left">
+            <div>
+               <h2 className="text-[28px] font-bold text-[#1A1D2B] font-heading">Báo cáo kết quả bài thi</h2>
+               <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 mt-2 text-[12.5px] text-[#6B7280]">
+                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[#9CA3AF]" /> {date}</span>
+                  <span className="w-1 h-1 bg-[#E8ECF1] rounded-full"></span>
+                  <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-[#1A8F5C]" /> {type}</span>
                </div>
             </div>
-
-            <div className="flex-grow space-y-6">
-               <div>
-                  <h2 className="text-4xl font-black font-heading text-white">Kết quả bài thi</h2>
-                  <p className="text-text-secondary mt-2 flex items-center gap-4 text-sm font-bold uppercase tracking-wider">
-                     <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {date}</span>
-                     <span className="w-1.5 h-1.5 bg-white/20 rounded-full"></span>
-                     <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-success" /> {type}</span>
-                  </p>
-               </div>
-               
-               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {stats.map((s) => (
-                     <div key={s.label} className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-1 group hover:border-white/10 transition-colors">
-                        <div className="text-[10px] text-text-muted font-black uppercase tracking-widest leading-none">
-                           {s.label}
-                        </div>
-                        <div className={cn("text-2xl font-black font-heading", s.color)}>
-                           {s.score}
-                        </div>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+               {stats.map((s) => (
+                  <div key={s.label} className="p-4 bg-[#F8F9FB] rounded-2xl border border-[#E8ECF1] space-y-1">
+                     <div className="text-[10px] text-[#9CA3AF] font-bold uppercase tracking-widest leading-none">
+                        {s.label}
                      </div>
-                  ))}
-               </div>
+                     <div className={cn("text-2xl font-bold font-heading", s.color)}>
+                        {s.score}
+                     </div>
+                  </div>
+               ))}
+            </div>
 
-               <div className="flex flex-wrap gap-4 pt-4">
-                  <Button className="gap-2 px-8 shadow-lg shadow-primary/20">
-                     <Share2 className="w-4 h-4" />
-                     Chia sẻ kết quả
-                  </Button>
-                  <Button variant="glass" className="gap-2">
-                     <Download className="w-4 h-4" />
-                     Tải PDF Báo cáo
-                  </Button>
-               </div>
+            <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
+               <button className="btn btn-primary px-8 shadow-indigo-200">
+                  <Share2 className="w-4 h-4" /> Chia sẻ
+               </button>
+               <button className="btn btn-ghost px-8">
+                  <Download className="w-4 h-4" /> Tải PDF
+               </button>
             </div>
          </div>
       </div>
 
       {/* Per-Question Details */}
-      <section className="space-y-6">
-         <div className="flex items-center gap-3">
-            <div className="w-1.5 h-6 bg-accent rounded-full"></div>
-            <h3 className="text-2xl font-bold font-heading text-white">Chi tiết từng câu hỏi</h3>
-         </div>
+      <section className="space-y-4">
+         <p className="section-title mb-2">Phân tích chi tiết từng câu hỏi</p>
 
-         <div className="space-y-4">
+         <div className="space-y-3">
             {results.map((r, index) => (
                <div 
                   key={r.id}
                   className={cn(
-                     "glass-card border border-white/10 overflow-hidden transition-all duration-300",
-                     expandedId === r.id ? "bg-white/[0.04] ring-1 ring-white/10" : "hover:bg-white/[0.02]"
+                     "card p-0 overflow-hidden transition-all duration-300",
+                     expandedId === r.id ? "ring-2 ring-[#4361EE]/10" : "hover:border-[#4361EE]/30"
                   )}
                >
                   <button 
                      onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                      className="w-full px-6 py-5 flex items-center gap-6"
                   >
-                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center font-bold text-text-secondary shrink-0">
+                     <div className="w-9 h-9 rounded-lg bg-[#F0F2F5] flex items-center justify-center font-bold text-[#6B7280] text-sm shrink-0">
                         {index + 1}
                      </div>
                      
                      <div className="flex-grow text-left">
-                        <div className="flex items-center gap-2 text-[10px] text-text-muted font-black uppercase tracking-wider mb-1">
-                           <Zap className="w-3 h-3 text-primary" />
+                        <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF] font-bold uppercase tracking-wider mb-1">
                            Part {r.part}
                         </div>
-                        <h4 className="text-white font-bold leading-tight group">
+                        <h4 className="text-[15px] font-bold text-[#1A1D2B] leading-tight group">
                            {r.question}
                         </h4>
                      </div>
 
                      <div className="flex items-center gap-8 pr-2">
-                        <div className="hidden sm:flex items-center gap-4 text-xs font-bold text-text-muted uppercase">
+                        <div className="hidden sm:flex items-center gap-5 text-[11px] font-bold text-[#9CA3AF] uppercase">
                            <div className="flex flex-col items-center">
                               <span>FC</span>
-                              <span className="text-white">{r.scores.fc}</span>
+                              <span className="text-[#1A1D2B]">{r.scores.fc}</span>
                            </div>
                            <div className="flex flex-col items-center">
                               <span>LR</span>
-                              <span className="text-white">{r.scores.lr}</span>
-                           </div>
-                           <div className="flex flex-col items-center">
-                              <span>GRA</span>
-                              <span className="text-white">{r.scores.gra}</span>
+                              <span className="text-[#1A1D2B]">{r.scores.lr}</span>
                            </div>
                         </div>
-                        <BandBadge score={r.overall_band} size="sm" />
-                        {expandedId === r.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        <div className="w-10 h-10 rounded-full bg-[#EEF0FD] flex items-center justify-center text-[#4361EE] font-bold">
+                           {r.overall_band}
+                        </div>
+                        {expandedId === r.id ? <ChevronUp className="w-5 h-5 text-[#9CA3AF]" /> : <ChevronDown className="w-5 h-5 text-[#9CA3AF]" />}
                      </div>
                   </button>
 
                   <div className={cn(
-                    "px-10 pb-8 transition-all duration-500 origin-top overflow-hidden",
-                    expandedId === r.id ? "max-h-[1000px] opacity-100 py-6" : "max-h-0 opacity-0 py-0"
+                    "px-8 pb-8 transition-all duration-500 origin-top overflow-hidden",
+                    expandedId === r.id ? "max-h-[1000px] opacity-100 py-4" : "max-h-0 opacity-0 py-0"
                   )}>
-                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-4">
+                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4 border-t border-[#F0F2F5]">
                         <div className="lg:col-span-2 space-y-6">
                            <div className="space-y-3">
-                              <label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                 <MessageCircle className="w-3.5 h-3.5" />
-                                 AI Feedback (Việt Nam)
+                              <label className="text-[11px] font-bold uppercase tracking-widest text-[#4361EE] flex items-center gap-2">
+                                 <MessageCircle className="w-4 h-4" /> Phản hồi từ AI
                               </label>
-                              <div className="p-6 bg-white/5 rounded-2xl border border-white/5 text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
+                              <div className="p-6 bg-[#F8F9FB] rounded-2xl border border-[#E8ECF1] text-[#1A1D2B] text-[14px] leading-relaxed whitespace-pre-wrap">
                                  {r.feedback}
                               </div>
                            </div>
 
-                           <div className="flex gap-4">
-                              <Button variant="glass" size="sm" className="gap-2 text-xs">
-                                 <Play className="w-3.5 h-3.5" />
-                                 Nghe lại bài nói
-                              </Button>
-                              <Button variant="glass" size="sm" className="gap-2 text-xs">
-                                 <FileText className="w-3.5 h-3.5" />
-                                 Xem Transcript
-                              </Button>
+                           <div className="flex gap-3">
+                              <button className="btn btn-ghost px-6 py-2.5 text-xs">
+                                 <Play className="w-3.5 h-3.5" /> Nghe lại
+                              </button>
+                              <button className="btn btn-ghost px-6 py-2.5 text-xs">
+                                 <FileText className="w-3.5 h-3.5" /> Xem Transcript
+                              </button>
                            </div>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="p-6 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-3xl border border-white/5 space-y-4">
-                               <h5 className="text-xs font-black uppercase tracking-widest text-white">Key takeaways</h5>
+                        <div className="space-y-5">
+                            <div className="p-6 bg-[#EEF0FD]/50 rounded-2xl border border-[#4361EE]/10 space-y-4">
+                               <h5 className="text-[11px] font-bold uppercase tracking-widest text-[#1A1D2B]">Điểm nổi bật</h5>
                                <ul className="space-y-3">
-                                  <li className="flex items-start gap-2 text-xs text-text-secondary">
-                                     <div className="w-1 h-1 rounded-full bg-primary mt-1.5" />
-                                     Sử dụng collocation "To the best of my knowledge" rất tốt.
+                                  <li className="flex items-start gap-2.5 text-[12.5px] text-[#6B7280]">
+                                     <div className="w-1.5 h-1.5 rounded-full bg-[#4361EE] mt-1.5 flex-shrink-0" />
+                                     Sử dụng collocation phù hợp với chủ đề.
                                   </li>
-                                  <li className="flex items-start gap-2 text-xs text-text-secondary">
-                                     <div className="w-1 h-1 rounded-full bg-primary mt-1.5" />
-                                     Cần chú ý kỹ âm đuôi /s/ trong các từ số nhiều.
-                                  </li>
-                                  <li className="flex items-start gap-2 text-xs text-text-secondary">
-                                     <div className="w-1 h-1 rounded-full bg-primary mt-1.5" />
-                                     Nỗ lực paraphrase từ "good" thành "exceptional".
+                                  <li className="flex items-start gap-2.5 text-[12.5px] text-[#6B7280]">
+                                     <div className="w-1.5 h-1.5 rounded-full bg-[#4361EE] mt-1.5 flex-shrink-0" />
+                                     Cần cải thiện ngữ điệu ở các câu phức.
                                   </li>
                                </ul>
                             </div>
                             
-                            <Button className="w-full gap-2 border-primary/20 text-xs px-0 bg-white/5 hover:bg-white/10" variant="glass">
-                                <TrendingUp className="w-4 h-4 text-primary" />
-                                So sánh với bài trước
-                            </Button>
+                            <button className="btn btn-ghost w-full text-xs py-3">
+                                <TrendingUp className="w-4 h-4 text-[#4361EE]" /> So sánh kết quả
+                            </button>
                         </div>
                      </div>
                   </div>
@@ -214,17 +198,15 @@ export function TestReport({ date, overallBand, type, results }: TestReportProps
       </section>
 
       {/* Action Footer */}
-      <footer className="pt-12 text-center pb-8 border-t border-white/5">
+      <footer className="pt-10 text-center pb-12 border-t border-[#E8ECF1]">
          <div className="flex flex-col items-center gap-4">
-            <h4 className="text-xl font-bold text-white">Bạn muốn cải thiện thêm?</h4>
-            <p className="text-text-secondary max-w-sm mx-auto text-sm">
-               Dành ra 15 phút mỗi ngày luyện theo từng câu để nâng band hiệu quả nhất.
+            <h4 className="text-xl font-bold text-[#1A1D2B] font-heading">Bạn đã sẵn sàng cho bước tiếp theo?</h4>
+            <p className="text-[13.5px] text-[#6B7280] max-w-sm mx-auto">
+               Luyện tập hàng ngày là chìa khóa để đạt band score mong muốn.
             </p>
-            <div className="flex gap-4 mt-4">
-               <Button variant="glass" className="px-8 shadow-xl">Về trang chủ</Button>
-               <Button className="px-10 bg-gradient-to-r from-primary to-secondary shadow-lg shadow-primary/20">
-                  Luyện tập ngay
-               </Button>
+            <div className="flex gap-3 mt-4">
+               <button className="btn btn-ghost px-8">Về trang chủ</button>
+               <button className="btn btn-primary px-10 shadow-indigo-200">Luyện tập ngay</button>
             </div>
          </div>
       </footer>

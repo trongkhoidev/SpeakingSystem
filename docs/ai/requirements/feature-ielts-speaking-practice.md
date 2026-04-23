@@ -47,13 +47,14 @@ last_updated: 2026-04-03
 - Mobile native apps (iOS/Android)
 - Multi-language support beyond English
 - AI Avatar examiner (future feature)
-- Payment/subscription system
+- Payment/subscription system — Guest trial provided in V1
 - Social features (leaderboards, sharing)
 - Offline mode
 - Teacher features (assign homework, track students) — deferred to V2
 - Reading (Scripted) practice mode — deferred to V2
 - Gaming (Tongue Twisters) practice mode — deferred to V2
 - Full AI Mentor Chat — simplified to "Explain more" button in V1
+- **Enhanced Security** — Only basic Google ID verification needed (no IP/device checks)
 
 ## User Stories & Use Cases
 
@@ -89,6 +90,17 @@ last_updated: 2026-04-03
 - As a learner, I want to receive a **comprehensive test report** with overall Band score after completing the test
 - As a learner, I want test questions to be randomly selected from the Forecast question bank
 
+### Trial Mode (Guest Access)
+- As a visitor, I want to **try the practice mode** without logging in (up to 3 questions)
+- As a visitor, I want to **try the mock test** without logging in (up to 1 test session)
+- As a visitor, I want to see a clear call-to-action to sign in after my trial ends
+
+### Admin & Satisfaction
+- As an admin, I want a **Dashboard** to see total users, active users, and usage trends
+- As an admin, I want to **manage user accounts** (view profiles, practice history count)
+- As an admin, I want to see **satisfaction metrics** aggregated from users
+- As a learner, I want to provide **feedback/rating** after a session to help improve the system
+
 ### Edge Cases
 - User records silence (no speech detected) → show "No speech detected" error, don't charge API
 - User records < 1 second → show "Recording too short" validation error
@@ -111,6 +123,9 @@ last_updated: 2026-04-03
 - [ ] Band score calculation uses official IELTS rounding rules
 - [ ] "Explain more" button generates deeper AI analysis per criterion
 - [ ] Audio replay available from practice history
+- [ ] Trial mode limits guest usage correctly (3 practices, 1 test)
+- [ ] Admin dashboard displays user counts and satisfaction metrics
+- [ ] Feedback system captures user satisfaction after assessments
 
 ### Performance
 - [ ] Audio processing completes within 8 seconds of recording stop

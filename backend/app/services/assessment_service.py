@@ -66,23 +66,42 @@ class AssessmentService:
         if not transcript or len(transcript.strip()) < 5:
             raise HTTPException(status_code=400, detail="No speech detected. Please try again with clearer audio.")
 
-        # 3. Stage 0 + Stage 1: Run Gatekeeper + Azure IN PARALLEL
-        #    Both only need the transcript from Deepgram — no dependency on each other.
-        gatekeeper_task = self.gatekeeper_service.check_relevance(
+        # 3. Stage 0: Gatekeeper (Sequential to save cost)
+        is_relevant, relevance_score = await self.gatekeeper_service.check_relevance(
             question_text, transcript
         )
-        azure_task = self.azure_service.assess_pronunciation(
+        
+        # If not relevant, we can decide to stop early or proceed with a warning.
+        # Per design, Stage 0 should block expensive AI calls.
+        if not is_relevant and relevance_score < 35:
+            # Return early with a mock/empty result for the expensive parts
+            return IELTSAssessmentResult(
+                question_id=UUID(question_id),
+                user_id=user_id,
+                student_transcript=transcript,
+                is_relevant=False,
+                relevance_score=relevance_score,
+                azure_pronunciation={},
+                feedback_json={
+                    "FC": {"score": 0, "feedback": "Câu trả lời không liên quan đến chủ đề.", "key_findings": []},
+                    "LR": {"score": 0, "feedback": "N/A", "band_8_plus_words": []},
+                    "GRA": {"score": 0, "feedback": "N/A", "error_types": [], "complexity": "N/A"},
+                    "model_answer": "N/A"
+                },
+                band_scores=BandScores(FC=0, LR=0, GRA=0, PRON=0),
+                overall_band=0.0,
+                color_coded_transcript=[],
+                audio_url=None
+            )
+
+        # 4. Stage 1: Azure Pronunciation (Stage 1)
+        azure_result = await self.azure_service.assess_pronunciation(
             audio_data=processed_audio,
             reference_text=transcript,
             language="en-US"
         )
         
-        (is_relevant, relevance_score), azure_result = await asyncio.gather(
-            gatekeeper_task,
-            azure_task
-        )
-        
-        # 4. Stage 2: LLM analysis (needs Azure brief for context)
+        # 5. Stage 2: LLM analysis (needs Azure brief for context)
         azure_brief = {
             "accuracy": azure_result.accuracy_score,
             "fluency": azure_result.fluency_score,
@@ -101,10 +120,17 @@ class AssessmentService:
             azure_result.prosody_score
         )
         
+        # BandScores uses aliases FC/LR/GRA/PRON (model has populate_by_name=True)
+        # Scores from LLM are 0-9; clamp to valid IELTS range
+        fc_score  = max(0.0, min(9.0, float(feedback_json["FC"]["score"])))
+        lr_score  = max(0.0, min(9.0, float(feedback_json["LR"]["score"])))
+        gra_score = max(0.0, min(9.0, float(feedback_json["GRA"]["score"])))
+        pron_band = max(0.0, min(9.0, pron_band))
+        
         band_scores = BandScores(
-            FC=feedback_json["FC"]["score"],
-            LR=feedback_json["LR"]["score"],
-            GRA=feedback_json["GRA"]["score"],
+            FC=fc_score,
+            LR=lr_score,
+            GRA=gra_score,
             PRON=pron_band
         )
         
@@ -133,6 +159,7 @@ class AssessmentService:
                 fluency_score=azure_result.fluency_score,
                 completeness_score=azure_result.completeness_score,
                 prosody_score=azure_result.prosody_score,
+                # Use Python attribute names (aliases are only for JSON serialization)
                 fc_band=band_scores.fluency_coherence,
                 lr_band=band_scores.lexical_resource,
                 gra_band=band_scores.grammatical_accuracy,

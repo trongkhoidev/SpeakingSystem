@@ -1,212 +1,181 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, Square } from 'lucide-react';
+import { useEffect, useCallback } from 'react';
+import { Mic, Square, Keyboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useMediaRecorder } from '@/hooks/useMediaRecorder';
 
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
   onStreamUpdate?: (stream: MediaStream) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export function AudioRecorder({ 
   onRecordingComplete, 
   onStreamUpdate,
-  className 
+  className,
+  disabled = false
 }: AudioRecorderProps) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [isError, setIsError] = useState(false);
-  const [volume, setVolume] = useState(0);
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<any>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const {
+    isRecording,
+    duration,
+    isError,
+    volume,
+    startRecording,
+    stopRecording,
+    formatDuration
+  } = useMediaRecorder({
+    onRecordingComplete,
+    onStreamUpdate
+  });
 
-  const startRecording = async () => {
-    try {
-      setIsError(false);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      // Audio Analysis setup
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-
-      const updateVolume = () => {
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((p, c) => p + c, 0) / dataArray.length;
-        setVolume(average);
-        animationFrameRef.current = requestAnimationFrame(updateVolume);
-      };
-      updateVolume();
-      
-      if (onStreamUpdate) {
-        onStreamUpdate(stream);
-      }
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
-      });
-      
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        onRecordingComplete(audioBlob);
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        audioContext.close();
-      };
-
-      mediaRecorder.start(100); // Collect data every 100ms
-      setIsRecording(true);
-      setDuration(0);
-      
-      timerRef.current = setInterval(() => {
-        setDuration(prev => prev + 1);
-      }, 1000);
-
-    } catch (err) {
-      console.error("Failed to start recording:", err);
-      setIsError(true);
+  const toggleRecording = useCallback(() => {
+    if (disabled) return;
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
-  };
+  }, [isRecording, stopRecording, startRecording, disabled]);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    
-    setIsRecording(false);
-    setVolume(0);
-  }, []);
-
+  // Keyboard shortcut: Space bar
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !disabled) {
+        // Prevent scrolling when pressing space
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          toggleRecording();
+        }
       }
     };
-  }, []);
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleRecording, disabled]);
 
   // Pulse scale based on volume (0-255)
   const pulseScale = 1 + (volume / 255) * 1.5;
 
   return (
-    <div className={cn("flex flex-col items-center gap-6", className)}>
+    <div className={cn("flex flex-col items-center gap-8", className)}>
       <div className="relative">
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {isRecording && (
             <>
-              {/* Outer Pulse */}
+              {/* Ultra-realistic Pulse Effects */}
               <motion.div 
                 initial={{ scale: 1, opacity: 0 }}
                 animate={{ 
-                  scale: pulseScale * 1.2, 
-                  opacity: (volume / 255) * 0.4 + 0.1 
+                  scale: pulseScale * 1.4, 
+                  opacity: (volume / 255) * 0.3 + 0.05 
                 }}
                 exit={{ scale: 1, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                transition={{ type: "spring", stiffness: 150, damping: 15 }}
+                className="absolute inset-0 bg-red-500/10 rounded-full blur-2xl"
+              />
+              <motion.div 
+                initial={{ scale: 1, opacity: 0 }}
+                animate={{ 
+                  scale: pulseScale * 1.1, 
+                  opacity: (volume / 255) * 0.5 + 0.1 
+                }}
+                exit={{ scale: 1, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 20 }}
                 className="absolute inset-0 bg-red-500/20 rounded-full blur-xl"
               />
-              {/* Inner Pulse */}
               <motion.div 
                 initial={{ scale: 1, opacity: 0 }}
                 animate={{ 
                   scale: pulseScale, 
-                  opacity: (volume / 255) * 0.6 + 0.2 
+                  opacity: (volume / 255) * 0.7 + 0.2 
                 }}
                 exit={{ scale: 1, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="absolute inset-0 bg-red-500/30 rounded-full blur-md"
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="absolute inset-0 bg-red-400/30 rounded-full blur-md"
               />
             </>
           )}
         </AnimatePresence>
         
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={isRecording ? stopRecording : startRecording}
+          whileHover={!disabled ? { scale: 1.05 } : {}}
+          whileTap={!disabled ? { scale: 0.95 } : {}}
+          onClick={toggleRecording}
+          disabled={disabled}
           className={cn(
-            "relative w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-500 shadow-2xl z-10",
+            "relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_0_50px_-12px_rgba(0,0,0,0.3)] z-10",
+            disabled ? "bg-gray-200 cursor-not-allowed" :
             isRecording 
-              ? "bg-red-500 hover:bg-red-600" 
-              : "bg-primary hover:bg-primary/90"
+              ? "bg-red-500 hover:bg-red-600 shadow-red-500/40" 
+              : "bg-primary hover:bg-primary/90 shadow-primary/40"
           )}
         >
-          {isRecording ? (
-            <motion.div
-              initial={{ rotate: -90, scale: 0 }}
-              animate={{ rotate: 0, scale: 1 }}
-            >
-              <Square className="w-10 h-10 text-white fill-current" />
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-            >
-              <Mic className="w-10 h-10 text-white" />
-            </motion.div>
-          )}
+          <AnimatePresence mode="wait">
+            {isRecording ? (
+              <motion.div
+                key="stop"
+                initial={{ scale: 0, rotate: -90 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 90 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Square className="w-12 h-12 text-white fill-current" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="start"
+                initial={{ scale: 0, rotate: 90 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: -90 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Mic className="w-12 h-12 text-white" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.button>
       </div>
 
-      <div className="text-center space-y-1">
-        <motion.div 
-          animate={isRecording ? { scale: [1, 1.02, 1] } : {}}
-          transition={{ duration: 1, repeat: Infinity }}
-          className={cn(
-            "text-3xl font-mono font-bold tracking-widest transition-colors",
-            isRecording ? "text-red-400" : "text-text-secondary"
-          )}
-        >
-          {formatDuration(duration)}
-        </motion.div>
-        <div className="text-sm font-medium text-text-tertiary">
-          {isRecording ? "Đang ghi âm..." : "Nhấn để bắt đầu"}
+      <div className="flex flex-col items-center gap-4">
+        <div className="text-center space-y-1">
+          <motion.div 
+            animate={isRecording ? { scale: [1, 1.05, 1] } : {}}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className={cn(
+              "text-4xl font-mono font-bold tracking-widest transition-colors",
+              isRecording ? "text-red-500" : "text-text-primary"
+            )}
+          >
+            {formatDuration(duration)}
+          </motion.div>
+          <div className="text-sm font-semibold uppercase tracking-wider text-text-tertiary">
+            {isRecording ? "Đang ghi âm..." : "Sẵn sàng"}
+          </div>
         </div>
+
+        {/* Keyboard Hint */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100/50 border border-slate-200/50 backdrop-blur-sm"
+        >
+          <Keyboard className="w-4 h-4 text-text-tertiary" />
+          <span className="text-xs font-medium text-text-tertiary uppercase">
+            Nhấn <kbd className="font-mono bg-white border border-slate-300 rounded px-1 shadow-sm text-text-secondary">SPACE</kbd> để {isRecording ? 'dừng' : 'bắt đầu'}
+          </span>
+        </motion.div>
       </div>
 
       {isError && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm font-medium bg-red-400/10 px-4 py-2 rounded-lg border border-red-400/20"
+          className="text-red-500 text-sm font-medium bg-red-50 px-4 py-3 rounded-xl border border-red-100 flex items-center gap-3"
         >
-          Không thể truy cập Microphone. Vui lòng kiểm tra cài đặt.
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          Không thể truy cập Microphone. Vui lòng kiểm tra quyền truy cập.
         </motion.div>
       )}
     </div>

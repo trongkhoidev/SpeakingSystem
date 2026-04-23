@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '../shared/Button';
 
 interface ReasoningCardsProps {
+  answerId?: string;
+  transcript: string;
   feedback: {
     FC: { score: number; feedback: string; key_findings: string[] };
     LR: { score: number; feedback: string; band_8_plus_words: string[] };
@@ -19,7 +21,7 @@ interface ReasoningCardsProps {
   };
 }
 
-export function ReasoningCards({ feedback }: ReasoningCardsProps) {
+export function ReasoningCards({ answerId, transcript, feedback }: ReasoningCardsProps) {
   const [expanded, setExpanded] = useState<string | null>('FC');
 
   const cards = [
@@ -57,6 +59,35 @@ export function ReasoningCards({ feedback }: ReasoningCardsProps) {
       bulletTitle: "Key Error Areas"
     }
   ];
+
+  const [explaining, setExplaining] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, any>>({});
+
+  const handleExplainMore = async (criterionId: string, originalReasoning: string) => {
+    if (!transcript) return;
+    setExplaining(criterionId);
+    try {
+      const critMap: Record<string, string> = {
+        'FC': 'fluency_coherence',
+        'LR': 'lexical_resource',
+        'GRA': 'grammatical_accuracy'
+      };
+      
+      const { default: api } = await import('@/lib/api');
+      const response = await api.post('/speech/explain-more', {
+        answer_id: answerId || "temporary",
+        criterion: critMap[criterionId] || criterionId,
+        original_reasoning: originalReasoning,
+        transcript: transcript
+      });
+      
+      setDetails(prev => ({ ...prev, [criterionId]: response.data }));
+    } catch (error) {
+      console.error("Explain more failed:", error);
+    } finally {
+      setExplaining(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -100,7 +131,7 @@ export function ReasoningCards({ feedback }: ReasoningCardsProps) {
 
           <div className={cn(
             "transition-all duration-700 ease-in-out",
-            expanded === c.id ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+            expanded === c.id ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"
           )}>
             <div className="px-10 pb-10 pt-2 space-y-10">
               <div className="h-[1px] w-full bg-white/5" />
@@ -134,19 +165,47 @@ export function ReasoningCards({ feedback }: ReasoningCardsProps) {
                   )}
                   
                   <div className="p-8 rounded-3xl bg-white/5 border border-white/5 space-y-6 flex flex-col justify-between">
-                    <div>
-                      <h5 className="text-[11px] font-black uppercase text-secondary/60 tracking-widest mb-3 flex items-center gap-2">
-                        <HelpCircle className="w-4 h-4 text-secondary/40" />
-                        Need more help?
-                      </h5>
-                      <p className="text-white/40 text-sm font-bold leading-relaxed">
-                        Hãy để AI giải thích chi tiết hơn về tiêu chí này và cách bạn có thể cải thiện điểm số.
-                      </p>
-                    </div>
-                    <Button variant="ghost" className="w-full justify-between items-center text-secondary border-none hover:bg-white/5 py-6 px-6 font-black tracking-widest text-xs rounded-2xl group/btn">
-                      EXPLAIN MORE
-                      <ArrowRightCircle className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
-                    </Button>
+                    {details[c.id] ? (
+                      <div className="space-y-4 animate-in fade-in zoom-in duration-500">
+                        <h5 className="text-[11px] font-black uppercase text-secondary/60 tracking-widest flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-secondary/40" />
+                          Detailed AI Analysis
+                        </h5>
+                        <p className="text-white/90 text-[13px] leading-relaxed italic whitespace-pre-wrap">
+                          {details[c.id].detailed_explanation}
+                        </p>
+                        <div className="space-y-2">
+                           {details[c.id].examples?.map((ex: string, exi: number) => (
+                             <div key={exi} className="text-[11px] text-white/50 border-l border-white/10 pl-3">{ex}</div>
+                           ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <h5 className="text-[11px] font-black uppercase text-secondary/60 tracking-widest mb-3 flex items-center gap-2">
+                            <HelpCircle className="w-4 h-4 text-secondary/40" />
+                            Need more help?
+                          </h5>
+                          <p className="text-white/40 text-sm font-bold leading-relaxed">
+                            Hãy để AI giải thích chi tiết hơn về tiêu chí này và cách bạn có thể cải thiện điểm số.
+                          </p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          disabled={explaining === c.id}
+                          onClick={() => handleExplainMore(c.id, c.content)}
+                          className="w-full justify-between items-center text-secondary border-none hover:bg-white/5 py-6 px-6 font-black tracking-widest text-xs rounded-2xl group/btn"
+                        >
+                          {explaining === c.id ? "THINKING..." : "EXPLAIN MORE"}
+                          {explaining === c.id ? (
+                            <div className="w-4 h-4 rounded-full border-2 border-secondary/20 border-t-secondary animate-spin" />
+                          ) : (
+                            <ArrowRightCircle className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

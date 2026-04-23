@@ -10,9 +10,12 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.routes.auth_routes import get_current_user
-from app.models.sqlalchemy_models import User
+from app.models.sqlalchemy_models import User, PracticeSession
 from app.models.assessment import IELTSAssessmentResult
 from app.services.assessment_service import AssessmentService
+from app.services.trial_service import TrialService
+from app.services.token_service import TokenService
+import uuid
 
 router = APIRouter(prefix="/speech", tags=["speech"])
 logger = logging.getLogger(__name__)
@@ -49,14 +52,45 @@ async def assess_speech(
         if not raw_audio:
             raise HTTPException(status_code=400, detail="Empty audio file")
 
-        return await assessment_service.run_assessment_pipeline(
+        # Enforce trial limits for guests
+        user_role = "user"
+        user_id = ""
+        
+        if isinstance(current_user, dict):
+            user_id = current_user.get("id", "")
+            user_role = current_user.get("role", "user")
+        else:
+            user_id = current_user.id
+            user_role = getattr(current_user, "role", "user")
+
+        if user_role == "guest" and not TrialService.can_practice(db, user_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Guest trial quota reached. Please sign in with Google to continue."
+            )
+        if user_role != "guest":
+            wallet = TokenService.get_or_create_wallet(db, current_user)
+            plan = TokenService.get_effective_plan(db, wallet.plan_code)
+            TokenService.consume_tokens(db, current_user, int(plan["practice_cost"]))
+
+        # Create a PracticeSession so answers are linked for heatmap/streak queries
+        practice_session = PracticeSession(user_id=user_id if user_role != "guest" else None)
+        db.add(practice_session)
+        db.commit()
+        db.refresh(practice_session)
+
+        result = await assessment_service.run_assessment_pipeline(
             audio_data=raw_audio,
             audio_filename=audio_file.filename or "audio.webm",
             question_text=question_text,
-            user_id=current_user.id,
+            user_id=user_id,
             question_id=question_id,
+            session_id=str(practice_session.id),
             db=db
         )
+        if user_role == "guest":
+            TrialService.increment_practice(db, user_id)
+        return result
 
     except HTTPException:
         raise
@@ -97,3 +131,13 @@ async def explain_more(
     except Exception as e:
         logger.error(f"Explain more failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/trial-status")
+async def get_trial_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check remaining trial uses for the current user/guest."""
+    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    return TrialService.get_status(db, user_id)

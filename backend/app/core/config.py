@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET", "")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours per design
+
+    # Admin bootstrap
+    ADMIN_EMAILS: str = os.getenv("ADMIN_EMAILS", "")
     
     # Storage
     AZURE_STORAGE_CONNECTION_STRING: str = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")

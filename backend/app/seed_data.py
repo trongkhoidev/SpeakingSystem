@@ -118,11 +118,11 @@ def seed_data():
         ]
 
         for item in part1_data:
-            topic = Topic(title=item["topic"], part=1)
+            topic = Topic(name=item["topic"], part=1)
             db.add(topic)
             db.flush() # Get ID
             for q_text in item["questions"]:
-                q = Question(text=q_text, part=1, topic_id=topic.id)
+                q = Question(question_text=q_text, part=1, topic_id=topic.id)
                 db.add(q)
 
         # 2. Part 2 Cue Cards
@@ -201,16 +201,16 @@ def seed_data():
             }
         ]
 
-        topic_p2 = Topic(title="Cue Cards", part=2)
+        topic_p2 = Topic(name="Cue Cards", part=2)
         db.add(topic_p2)
         db.flush()
 
         for item in part2_data:
             q = Question(
-                text=item["topic"], 
+                question_text=item["topic"], 
                 part=2, 
                 topic_id=topic_p2.id, 
-                bullets=item["bullets"]
+                cue_card_json=json.dumps({"topic": item["topic"], "bullets": item["bullets"]})
             )
             db.add(q)
 
@@ -291,11 +291,11 @@ def seed_data():
         ]
 
         for item in part3_data:
-            topic = Topic(title=item["topic"], part=3)
+            topic = Topic(name=item["topic"], part=3)
             db.add(topic)
             db.flush()
             for q_text in item["questions"]:
-                q = Question(text=q_text, part=3, topic_id=topic.id)
+                q = Question(question_text=q_text, part=3, topic_id=topic.id)
                 db.add(q)
 
         db.commit()

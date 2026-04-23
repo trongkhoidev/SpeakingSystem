@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../shared/Modal';
-import { Button } from '../shared/Button';
+import { Button } from '../ui/Button';
 import { 
   Users, 
   Settings2, 
@@ -37,9 +37,9 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
   });
 
   const voices = [
-    { id: 'female-uk', name: 'Emma (UK - British Accent)', icon: <User className="w-4 h-4" /> },
-    { id: 'male-us', name: 'James (US - American Accent)', icon: <User className="w-4 h-4" /> },
-    { id: 'female-au', name: 'Olivia (AU - Australian Accent)', icon: <User className="w-4 h-4" /> },
+    { id: 'female-uk', name: 'Emma (UK - British)', icon: <User className="w-4 h-4" /> },
+    { id: 'male-us', name: 'James (US - American)', icon: <User className="w-4 h-4" /> },
+    { id: 'female-au', name: 'Olivia (AU - Australian)', icon: <User className="w-4 h-4" /> },
   ];
 
   const modes = [
@@ -57,11 +57,11 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
       description="Tùy chỉnh trải nghiệm thi thử của bạn để đạt hiệu quả cao nhất."
       size="lg"
     >
-      <div className="space-y-8 py-4">
+      <div className="space-y-8 py-2">
         {/* Mode selection */}
         <div className="space-y-4">
-          <label className="text-sm font-bold text-white flex items-center gap-2">
-            <Zap className="w-4 h-4 text-primary" />
+          <label className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[#4361EE]" />
             Chế độ thi
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -70,15 +70,15 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
                 key={m.id}
                 onClick={() => setConfig({ ...config, mode: m.id as any })}
                 className={cn(
-                  "p-4 rounded-xl flex items-center gap-3 border transition-all text-sm font-medium",
+                  "p-4 rounded-xl flex items-center gap-3 border transition-all text-[13.5px] font-medium",
                   config.mode === m.id 
-                    ? "bg-primary/20 border-primary text-white shadow-lg shadow-primary/10" 
-                    : "bg-white/5 border-white/5 text-text-secondary hover:bg-white/[0.08]"
+                    ? "bg-[#EEF0FD] border-[#4361EE] text-[#4361EE] shadow-md shadow-indigo-100" 
+                    : "bg-[#F8F9FB] border-[#E8ECF1] text-[#6B7280] hover:bg-[#F0F2F5]"
                 )}
               >
                 <div className={cn(
                   "p-2 rounded-lg",
-                  config.mode === m.id ? "bg-primary/20 text-primary" : "bg-white/5 text-text-muted"
+                  config.mode === m.id ? "bg-[#4361EE] text-white" : "bg-white text-[#9CA3AF] border border-[#E8ECF1]"
                 )}>
                   {m.icon}
                 </div>
@@ -90,8 +90,8 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
 
         {/* Examiner Voice */}
         <div className="space-y-4">
-          <label className="text-sm font-bold text-white flex items-center gap-2">
-            <Users className="w-4 h-4 text-secondary" />
+          <label className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#7C3AED]" />
             Giám khảo (Giọng đọc)
           </label>
           <div className="space-y-2">
@@ -100,23 +100,23 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
                 key={v.id}
                 onClick={() => setConfig({ ...config, examinerVoice: v.id })}
                 className={cn(
-                  "w-full p-4 rounded-xl flex items-center justify-between border transition-all text-sm font-medium group",
+                  "w-full p-4 rounded-xl flex items-center justify-between border transition-all text-[13.5px] font-medium group",
                   config.examinerVoice === v.id 
-                    ? "bg-secondary/20 border-secondary text-white shadow-lg shadow-secondary/10" 
-                    : "bg-white/5 border-white/5 text-text-secondary hover:bg-white/[0.08]"
+                    ? "bg-[#F3F0FF] border-[#7C3AED] text-[#7C3AED]" 
+                    : "bg-[#F8F9FB] border-[#E8ECF1] text-[#6B7280] hover:bg-[#F0F2F5]"
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "p-2 rounded-lg",
-                    config.examinerVoice === v.id ? "bg-secondary/20 text-secondary" : "bg-white/5 text-text-muted"
+                    config.examinerVoice === v.id ? "bg-[#7C3AED] text-white" : "bg-white text-[#9CA3AF] border border-[#E8ECF1]"
                   )}>
                     {v.icon}
                   </div>
                   {v.name}
                 </div>
                 {config.examinerVoice === v.id && (
-                  <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-[#7C3AED] animate-pulse" />
                 )}
               </button>
             ))}
@@ -124,14 +124,14 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
         </div>
 
         {/* Advanced Settings */}
-        <div className="space-y-5 pt-2 border-t border-white/5">
+        <div className="space-y-5 pt-6 border-t border-[#E8ECF1]">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <label className="text-sm font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-accent" />
-                Số lượng câu hỏi (Part 1/3)
+              <label className="text-[13px] font-bold text-[#1A1D2B] flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-[#F59E0B]" />
+                Số lượng câu hỏi
               </label>
-              <p className="text-xs text-text-muted">Chọn từ 2 đến 9 câu hỏi cho mỗi phần.</p>
+              <p className="text-[11px] text-[#9CA3AF]">Chọn từ 2 đến 9 câu hỏi cho mỗi phần.</p>
             </div>
             <div className="flex items-center gap-4">
               <input 
@@ -140,9 +140,9 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
                 max="9" 
                 value={config.questionCount}
                 onChange={(e) => setConfig({ ...config, questionCount: parseInt(e.target.value) })}
-                className="w-32 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                className="w-24 h-1.5 bg-[#E8ECF1] rounded-lg appearance-none cursor-pointer accent-[#4361EE]"
               />
-              <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-md min-w-[32px] text-center">
+              <span className="text-[13px] font-bold text-[#1A1D2B] bg-[#F0F2F5] px-3 py-1 rounded-lg min-w-[32px] text-center">
                 {config.questionCount}
               </span>
             </div>
@@ -150,18 +150,18 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <label className="text-sm font-bold text-white flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-emerald-400" />
+              <label className="text-[13px] font-bold text-[#1A1D2B] flex items-center gap-2">
+                <Settings2 className="w-4 h-4 text-[#1A8F5C]" />
                 Câu hỏi tiếp nối (Follow-up)
               </label>
-              <p className="text-xs text-text-muted">AI sẽ tự động hỏi thêm dựa trên câu trả lời của bạn.</p>
+              <p className="text-[11px] text-[#9CA3AF]">AI sẽ hỏi thêm dựa trên câu trả lời của bạn.</p>
             </div>
             <button 
               onClick={() => setConfig({ ...config, followUpEnabled: !config.followUpEnabled })}
-              className="text-text-muted hover:text-white transition-colors"
+              className="text-[#D1D5DB] hover:text-[#4361EE] transition-all"
             >
               {config.followUpEnabled 
-                ? <ToggleRight className="w-10 h-10 text-success" /> 
+                ? <ToggleRight className="w-10 h-10 text-[#4361EE]" /> 
                 : <ToggleLeft className="w-10 h-10" />
               }
             </button>
@@ -170,14 +170,14 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
 
         {/* Start Button */}
         <div className="pt-4">
-          <Button 
+          <button 
             onClick={() => onStart(config)}
-            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary to-secondary group gap-2"
+            className="btn btn-primary w-full py-4 text-[15px] shadow-indigo-100 flex items-center justify-center gap-2"
           >
             Bắt đầu bài thi ngay
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
-          <p className="text-[10px] text-text-muted text-center mt-3 uppercase tracking-widest font-bold">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <p className="text-[10px] text-[#9CA3AF] text-center mt-4 uppercase tracking-widest font-bold">
             Mic check: Đảm bảo bạn đang ở nơi yên tĩnh
           </p>
         </div>

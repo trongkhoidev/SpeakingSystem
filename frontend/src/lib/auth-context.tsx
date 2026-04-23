@@ -6,15 +6,20 @@ interface User {
   email: string;
   full_name?: string;
   avatar_url?: string;
+  role?: 'admin' | 'user' | 'guest';
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  error: string | null;
   login: (idToken: string) => Promise<void>;
+  loginGuest: () => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isGuest: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Load user profile on mount if token exists
@@ -49,15 +55,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (idToken: string) => {
     try {
       setLoading(true);
+      setError(null);
       const response = await api.post('/auth/google', { id_token: idToken });
       const { access_token, user: userData } = response.data;
       
       setToken(access_token);
       setUser(userData);
       localStorage.setItem('token', access_token);
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
+    } catch (err: any) {
+      console.error('Login failed:', err);
+      const message = err.response?.data?.detail || err.message || 'Login failed';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginGuest = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.post('/auth/guest');
+      const { access_token, user: userData } = response.data;
+      
+      setToken(access_token);
+      setUser(userData);
+      localStorage.setItem('token', access_token);
+    } catch (err: any) {
+      console.error('Guest login failed:', err);
+      const message = err.response?.data?.detail || err.message || 'Guest login failed';
+      setError(message);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -73,9 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     token,
     loading,
+    error,
     login,
+    loginGuest,
     logout,
     isAuthenticated: !!token,
+    isAdmin: user?.role === 'admin',
+    isGuest: user?.role === 'guest',
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

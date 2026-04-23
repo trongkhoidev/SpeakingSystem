@@ -10,6 +10,7 @@ interface AddQuestionModalProps {
 }
 
 export function AddQuestionModal({ isOpen, onClose, onSuccess }: AddQuestionModalProps) {
+  console.log('AddQuestionModal isOpen:', isOpen);
   const [text, setText] = useState('');
   const [part, setPart] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -23,9 +24,8 @@ export function AddQuestionModal({ isOpen, onClose, onSuccess }: AddQuestionModa
     setError('');
     try {
       await api.post('/questions/custom', {
-        text: text.trim(),
-        part: Number(part),
-        is_custom: true
+        question_text: text.trim(),
+        part: Number(part)
       });
       setText('');
       onSuccess();

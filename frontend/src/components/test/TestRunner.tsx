@@ -4,16 +4,18 @@ import {
   Volume2, 
   AlertCircle,
   CheckCircle2,
-  ListRestart
+  ListRestart,
+  ArrowRight,
+  Clock
 } from 'lucide-react';
-import { Button } from '../shared/Button';
+import { Button } from '../ui/Button';
 import { CueCard } from './CueCard';
 import { AudioRecorder } from '../audio/AudioRecorder';
 import { WaveformVisualizer } from '../audio/WaveformVisualizer';
 import { LiveTranscript } from '../audio/LiveTranscript';
 import { TestConfig } from './TestSetupModal';
 import { cn } from '../../lib/utils';
-import { useDeepgram } from '../../hooks/useDeepgram';
+import { useTranscription } from '../../hooks/useTranscription';
 import api from '../../lib/api';
 
 type TestState = 
@@ -26,7 +28,7 @@ type TestState =
 
 interface Question {
   id: string;
-  text: string;
+  question_text: string;
   part: 1 | 2 | 3;
   cueCard?: {
     topic: string;
@@ -47,12 +49,16 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   const [prepTimer, setPrepTimer] = useState(60);
   const [answers, setAnswers] = useState<any[]>([]);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [speakingTimer, setSpeakingTimer] = useState(60);
+  const [isLowTime, setIsLowTime] = useState(false);
+  const recorderRef = useRef<any>(null);
   const { 
     interimTranscript, 
     finalTranscript, 
     startTranscribing, 
-    stopTranscribing 
-  } = useDeepgram();
+    stopTranscribing,
+    resetTranscript
+  } = useTranscription();
   
   const currentQuestion = questions[currentQuestionIndex];
   const timerRef = useRef<any>(null);
@@ -61,10 +67,7 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   const speakQuestion = useCallback((text: string) => {
     setTestState('EXAMINER_SPEAKING');
     
-    // In a real app, this would be a high-quality cloud TTS
-    // For now, use browser speech synthesis
     const utterance = new SpeechSynthesisUtterance(text);
-    // Rough heuristic for voice selection based on config
     const voices = window.speechSynthesis.getVoices();
     if (config.examinerVoice.includes('female')) {
       const femaleVoice = voices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('google uk english female'));
@@ -77,19 +80,46 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
         startPrepTimer();
       } else {
         setTestState('USER_SPEAKING');
+        startSpeakingTimer(currentQuestion.part === 2 ? 120 : 60);
       }
     };
     
     window.speechSynthesis.speak(utterance);
   }, [config.examinerVoice, currentQuestion]);
 
+  const startSpeakingTimer = (duration: number) => {
+    setSpeakingTimer(duration);
+    setIsLowTime(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    
+    timerRef.current = setInterval(() => {
+      setSpeakingTimer(prev => {
+        if (prev <= 11) setIsLowTime(true);
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          handleAutoStop();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleAutoStop = () => {
+    if (recorderRef.current) {
+      recorderRef.current.stopRecording();
+    }
+  };
+
   const startPrepTimer = () => {
     setPrepTimer(60);
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setPrepTimer(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           setTestState('USER_SPEAKING');
+          startSpeakingTimer(120);
           return 0;
         }
         return prev - 1;
@@ -101,9 +131,9 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setTestState('IDLE');
+      resetTranscript();
     } else {
       setTestState('COMPLETED');
-      // Finalize the session on backend
       api.post(`/test/${sessionId}/complete`).then(() => {
         onComplete();
       });
@@ -111,14 +141,19 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   };
 
   const handleRecordingComplete = async (blob: Blob) => {
+    if (timerRef.current) clearInterval(timerRef.current);
     stopTranscribing();
     setTestState('BETWEEN_QUESTIONS');
     
-    // Submit answer to backend
+    // Auto-advance after 3 seconds in mock test
+    setTimeout(() => {
+      nextQuestion();
+    }, 3000);
+    
     const formData = new FormData();
     formData.append('audio_file', blob, 'answer.wav');
     formData.append('question_id', currentQuestion.id);
-    formData.append('question_text', currentQuestion.text);
+    formData.append('question_text', currentQuestion.question_text);
     
     try {
       await api.post(`/test/${sessionId}/answer`, formData, {
@@ -132,9 +167,8 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
 
   useEffect(() => {
     if (testState === 'IDLE' && currentQuestion) {
-      // Small delay before starting
       const timer = setTimeout(() => {
-        speakQuestion(currentQuestion.text);
+        speakQuestion(currentQuestion.question_text);
       }, 1000);
       return () => clearTimeout(timer);
     }
@@ -148,40 +182,40 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500">
       {/* Progress Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-6 px-4">
+        <div className="flex items-center gap-3 flex-1">
           {questions.map((_, idx) => (
             <div 
               key={idx}
               className={cn(
-                "h-2 rounded-full transition-all duration-500",
-                idx < currentQuestionIndex ? "w-8 bg-success" : 
-                idx === currentQuestionIndex ? "w-12 bg-primary animate-pulse" : 
-                "w-4 bg-white/10"
+                "h-1.5 rounded-full transition-all duration-700",
+                idx < currentQuestionIndex ? "w-8 bg-[#1A8F5C]" : 
+                idx === currentQuestionIndex ? "w-12 bg-[#4361EE] animate-pulse" : 
+                "flex-1 bg-[#E8ECF1]"
               )}
             />
           ))}
         </div>
-        <div className="text-text-muted text-xs font-bold uppercase tracking-widest leading-none">
-          Question {currentQuestionIndex + 1} of {questions.length}
+        <div className="text-[#9CA3AF] text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
+          Câu {currentQuestionIndex + 1} / {questions.length}
         </div>
       </div>
 
       {/* Main Interaction Area */}
-      <div className="min-h-[400px] flex flex-col items-center justify-center relative">
+      <div className="min-h-[450px] flex flex-col items-center justify-center relative">
         {(testState === 'IDLE' || testState === 'EXAMINER_SPEAKING') && (
-          <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500">
-            <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto relative">
-              <Volume2 className="w-10 h-10 text-primary animate-pulse" />
-              <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-ping" />
+          <div className="space-y-10 text-center animate-scale-in">
+            <div className="w-24 h-24 bg-[#EEF0FD] rounded-full flex items-center justify-center mx-auto relative">
+              <Volume2 className="w-10 h-10 text-[#4361EE] animate-pulse" />
+              <div className="absolute inset-0 border-2 border-[#4361EE]/20 rounded-full animate-ping" />
             </div>
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white max-w-xl mx-auto leading-relaxed italic">
-                "{currentQuestion.text}"
+              <h2 className="text-2xl md:text-3xl font-bold text-[#1A1D2B] max-w-xl mx-auto leading-relaxed italic font-heading">
+                "{currentQuestion.question_text}"
               </h2>
-              <p className="text-primary font-medium tracking-wide animate-pulse">
+              <p className="text-[#4361EE] text-[13px] font-bold tracking-wide uppercase animate-pulse">
                 Giám khảo đang đọc câu hỏi...
               </p>
             </div>
@@ -189,34 +223,36 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
         )}
 
         {testState === 'PART2_PREP' && currentQuestion.cueCard && (
-          <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <CueCard 
               topic={currentQuestion.cueCard.topic} 
               bullets={currentQuestion.cueCard.bullets}
               preparationTime={prepTimer}
             />
-            <div className="mt-8 flex flex-col items-center gap-4">
-              <p className="text-text-secondary font-medium">Bạn có 1 phút để chuẩn bị. Bài thi sẽ tự động bắt đầu sau:</p>
-              <div className="text-5xl font-black font-heading text-secondary tabular-nums">
-                {prepTimer}s
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex flex-col items-center">
+                <span className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1">Thời gian chuẩn bị</span>
+                <div className="text-6xl font-black font-heading text-[#4361EE] tabular-nums">
+                  {prepTimer}s
+                </div>
               </div>
-              <Button 
-                variant="glass" 
+              <button 
                 onClick={() => {
-                  clearInterval(timerRef.current);
+                  if (timerRef.current) clearInterval(timerRef.current);
                   setTestState('USER_SPEAKING');
                 }}
+                className="btn btn-primary px-10 py-4 shadow-xl"
               >
-                Tôi đã sẵn sàng
-              </Button>
+                Tôi đã sẵn sàng để nói
+              </button>
             </div>
           </div>
         )}
 
         {testState === 'USER_SPEAKING' && (
-          <div className="w-full space-y-12 animate-in fade-in zoom-in duration-500">
+          <div className="w-full space-y-12 animate-scale-in">
             {currentQuestion.part === 2 && currentQuestion.cueCard && (
-              <div className="opacity-60 scale-90 blur-[1px] grayscale-[50%] transition-all hover:opacity-100 hover:scale-95 hover:blur-0 hover:grayscale-0">
+              <div className="opacity-40 scale-90 blur-[0.5px] transition-all hover:opacity-100 hover:scale-95 hover:blur-0">
                 <CueCard 
                   topic={currentQuestion.cueCard.topic} 
                   bullets={currentQuestion.cueCard.bullets}
@@ -224,29 +260,37 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
               </div>
             )}
             
-            <div className="flex flex-col items-center gap-8">
-              <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden">
+            <div className="flex flex-col items-center gap-10">
+              <div className="w-full max-w-md bg-white border border-[#E8ECF1] rounded-2xl p-8 shadow-sm">
                 <WaveformVisualizer stream={stream} isRecording={true} className="h-24 w-full" />
-                <div className="absolute inset-0 bg-gradient-to-t from-bg-dark/50 to-transparent pointer-events-none" />
               </div>
 
               <div className="relative group">
-                <div className="absolute inset-0 bg-red-500/20 rounded-full blur-2xl group-hover:bg-red-500/30 transition-all duration-500" />
+                <div className={cn(
+                  "absolute inset-0 rounded-full blur-2xl transition-all duration-500",
+                  isLowTime ? "bg-red-500/30 animate-pulse" : "bg-[#4361EE]/10"
+                )} />
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-1.5 bg-white border border-[#E8ECF1] rounded-full shadow-sm">
+                   <Clock className={cn("w-3.5 h-3.5", isLowTime ? "text-red-500 animate-bounce" : "text-[#4361EE]")} />
+                   <span className={cn("text-[13px] font-bold tabular-nums", isLowTime ? "text-red-500" : "text-[#1A1D2B]")}>
+                      {Math.floor(speakingTimer / 60)}:{(speakingTimer % 60).toString().padStart(2, '0')}
+                   </span>
+                </div>
                 <AudioRecorder 
+                  ref={recorderRef}
                   onRecordingComplete={handleRecordingComplete}
                   onStreamUpdate={(s) => {
                     setStream(s);
                     startTranscribing(s);
                   }}
-                  className="relative z-10"
                 />
               </div>
 
-              <div className="w-full max-w-2xl bg-white/[0.02] rounded-2xl p-6 border border-white/5">
+              <div className="w-full max-w-2xl bg-white rounded-2xl p-8 border border-[#E8ECF1] shadow-sm">
                 <LiveTranscript 
                   interimText={interimTranscript} 
                   finalText={finalTranscript} 
-                  className="text-center" 
+                  className="text-center text-[#1A1D2B]" 
                 />
               </div>
             </div>
@@ -254,59 +298,59 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
         )}
 
         {testState === 'BETWEEN_QUESTIONS' && (
-          <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500">
-            <div className="w-20 h-20 bg-success/20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-success">
+          <div className="space-y-10 text-center animate-scale-in">
+            <div className="w-20 h-20 bg-[#E6F9F0] rounded-3xl flex items-center justify-center mx-auto mb-6 text-[#1A8F5C]">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white">Xong câu hỏi {currentQuestionIndex + 1}!</h2>
-              <p className="text-text-secondary max-w-sm mx-auto">
-                Hệ thống đã ghi nhận câu trả lời của bạn. Sẵn sàng cho câu hỏi tiếp theo chưa?
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold text-[#1A1D2B] font-heading">Hoàn thành câu hỏi {currentQuestionIndex + 1}!</h2>
+              <p className="text-[14px] text-[#6B7280] max-w-sm mx-auto">
+                Câu trả lời đã được lưu. Hãy sẵn sàng cho thử thách tiếp theo.
               </p>
             </div>
-            <div className="flex gap-4 justify-center">
-              <Button variant="glass" className="gap-2" onClick={() => setTestState('IDLE')}>
+            <div className="flex gap-4 justify-center opacity-50 pointer-events-none">
+              <button className="btn btn-ghost px-8">
                 <ListRestart className="w-4 h-4" />
-                Làm lại câu này
-              </Button>
-              <Button className="gap-2 px-8" onClick={nextQuestion}>
-                Câu tiếp theo
-                <ChevronRight className="w-5 h-5" />
-              </Button>
+                Luyện lại câu này
+              </button>
+              <button className="btn btn-primary px-10 gap-2">
+                Đang chuyển câu...
+                <ArrowRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         )}
 
         {testState === 'COMPLETED' && (
-          <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500">
-             <div className="w-24 h-24 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-primary/20">
-              <CheckCircle2 className="w-12 h-12 text-white" />
+          <div className="space-y-10 text-center animate-scale-in">
+             <div className="w-24 h-24 bg-[#EEF0FD] rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
+              <CheckCircle2 className="w-12 h-12 text-[#4361EE]" />
             </div>
-            <h2 className="text-4xl font-black font-heading text-white">Bài thi hoàn tất!</h2>
-            <p className="text-lg text-text-secondary max-w-md mx-auto">
-              Chúc mừng bạn đã hoàn thành bài thi thử. AI đang phân tích toàn bộ các câu trả lời của bạn.
+            <h2 className="text-[32px] font-bold text-[#1A1D2B] font-heading">Bài thi hoàn tất!</h2>
+            <p className="text-[15px] text-[#6B7280] max-w-md mx-auto">
+              Chúc mừng bạn đã hoàn thành bài thi thử. AI đang tổng hợp và phân tích toàn bộ câu trả lời của bạn.
             </p>
-            <div className="pt-8 flex flex-col items-center gap-4">
-               <div className="w-full max-w-xs h-2 bg-white/10 rounded-full overflow-hidden">
-                 <div className="h-full bg-gradient-to-r from-primary to-secondary animate-shimmer" style={{ width: '100%' }} />
+            <div className="pt-8 flex flex-col items-center gap-6">
+               <div className="w-full max-w-xs h-1.5 bg-[#E8ECF1] rounded-full overflow-hidden">
+                 <div className="h-full bg-[#4361EE] animate-pulse" style={{ width: '100%' }} />
                </div>
-               <p className="text-xs text-text-muted font-bold uppercase tracking-widest">
-                 Đang trích xuất báo cáo chuyên sâu...
+               <p className="text-[10px] text-[#9CA3AF] font-bold uppercase tracking-widest">
+                 Đang khởi tạo báo cáo chuyên sâu...
                </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer Controls */}
-      <div className="flex items-center justify-between pt-12 border-t border-white/5 opacity-40 hover:opacity-100 transition-opacity">
-        <div className="flex items-center gap-4 text-xs font-bold text-text-muted uppercase tracking-widest">
+      {/* Footer Warnings */}
+      <div className="flex items-center justify-between pt-10 border-t border-[#E8ECF1] opacity-60">
+        <div className="flex items-center gap-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">
            <AlertCircle className="w-4 h-4" />
-           Cảnh báo: Đừng thoát trang khi đang thi
+           Cảnh báo: Không tải lại trang khi đang thi
         </div>
-        <Button variant="ghost" size="sm" className="text-error hover:bg-error/10">
+        <button className="btn btn-ghost border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 text-xs px-4 py-2">
           Hủy bài thi
-        </Button>
+        </button>
       </div>
     </div>
   );

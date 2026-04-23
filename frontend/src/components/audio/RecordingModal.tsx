@@ -13,7 +13,7 @@ import { WaveformVisualizer } from './WaveformVisualizer';
 import { LiveTranscript } from './LiveTranscript';
 import { Check, X, Mic2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useDeepgram } from '@/hooks/useDeepgram';
+import { useTranscription } from '@/hooks/useTranscription';
 import { resampleAndConvertToWav } from '@/lib/audio';
 import { FeedbackPanel } from '../feedback/FeedbackPanel';
 import { AssessmentLoading } from '../feedback/AssessmentLoading';
@@ -23,7 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 interface RecordingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  question: { id: string; text: string } | null;
+  question: { id: string; question_text: string } | null;
   onSuccess: (result: any) => void;
 }
 
@@ -35,7 +35,15 @@ export function RecordingModal({ isOpen, onClose, question, onSuccess }: Recordi
   const [isProcessing, setIsProcessing]         = useState(false);
   const [assessmentResult, setAssessmentResult] = useState<any | null>(null);
 
-  const { interimTranscript, finalTranscript, startTranscribing, stopTranscribing } = useDeepgram();
+  const { 
+    interimTranscript, 
+    finalTranscript, 
+    status: transcriptionStatus,
+    isFallback,
+    startTranscribing, 
+    stopTranscribing,
+    resetTranscript 
+  } = useTranscription();
 
   useEffect(() => {
     if (!isOpen) {
@@ -45,8 +53,9 @@ export function RecordingModal({ isOpen, onClose, question, onSuccess }: Recordi
       setIsProcessing(false);
       setAssessmentResult(null);
       stopTranscribing();
+      resetTranscript();
     }
-  }, [isOpen, stopTranscribing]);
+  }, [isOpen, stopTranscribing, resetTranscript]);
 
   const handleRecordingComplete = async (blob: Blob) => {
     setIsRecording(false);
@@ -65,6 +74,7 @@ export function RecordingModal({ isOpen, onClose, question, onSuccess }: Recordi
   const handleStreamUpdate = (newStream: MediaStream) => {
     setStream(newStream);
     setIsRecording(true);
+    resetTranscript();
     startTranscribing(newStream);
   };
 
@@ -74,7 +84,7 @@ export function RecordingModal({ isOpen, onClose, question, onSuccess }: Recordi
     const formData = new FormData();
     formData.append('audio_file', audioBlob, 'recording.wav');
     formData.append('question_id', question.id);
-    formData.append('question_text', question.text);
+    formData.append('question_text', question.question_text);
     formData.append('user_id', user.id);
 
     try {
@@ -146,7 +156,7 @@ export function RecordingModal({ isOpen, onClose, question, onSuccess }: Recordi
                   className="text-xl md:text-2xl font-bold font-heading leading-snug"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  {question.text}
+                  {question.question_text}
                 </DialogTitle>
               </DialogHeader>
 
@@ -175,24 +185,11 @@ export function RecordingModal({ isOpen, onClose, question, onSuccess }: Recordi
 
               {/* Live transcript */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                  <span className="section-label">Văn bản nhận dạng</span>
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className={cn('w-1.5 h-1.5 rounded-full', isRecording ? 'bg-red-500 animate-pulse' : '')}
-                      style={{ background: isRecording ? '#E94235' : 'var(--border-medium)' }}
-                    />
-                    <span
-                      className="text-[10px] font-semibold"
-                      style={{ color: isRecording ? '#E94235' : 'var(--text-muted)' }}
-                    >
-                      {isRecording ? 'LIVE' : 'CHỜ'}
-                    </span>
-                  </div>
-                </div>
                 <LiveTranscript
                   interimText={interimTranscript}
                   finalText={finalTranscript}
+                  status={transcriptionStatus}
+                  isFallback={isFallback}
                 />
               </div>
             </>

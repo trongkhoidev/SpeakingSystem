@@ -1,0 +1,15 @@
+flask
+flask-cors
+google-generativeai
+pymupdf
+pytesseract
+Pillow
+requests
+deepgram-sdk==3.11.0
+azure-cognitiveservices-speech
+python-dotenv
+openai
+allosaurus
+python-Levenshtein
+g2p-en
+pydub
