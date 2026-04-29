@@ -1,11 +1,6 @@
-[build]
-builder = "DOCKER"
-
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 
-# This file is for the backend service if you deploy it from the root.
-# However, it's recommended to set the 'Root Directory' in Railway settings
-# to 'backend' for the backend service and 'frontend' for the frontend service.
+# Railway automatically detects the Dockerfile in the backend directory.
