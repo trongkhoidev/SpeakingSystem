@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from './api';
+import { getDeviceFingerprint } from './fingerprint';
 
 interface User {
   id: string;
@@ -39,10 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        console.log('[AuthContext] Fetching user profile...');
         const response = await api.get('/auth/me');
+        console.log('[AuthContext] User profile loaded:', response.data.email, 'Role:', response.data.role);
         setUser(response.data);
       } catch (error) {
-        console.error('Failed to fetch user:', error);
+        console.error('[AuthContext] Failed to fetch user:', error);
         logout();
       } finally {
         setLoading(false);
@@ -56,14 +59,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.post('/auth/google', { id_token: idToken });
+      console.log('[AuthContext] Attempting Google login...');
+      const fingerprint = await getDeviceFingerprint();
+      const response = await api.post('/auth/google', 
+        { id_token: idToken },
+        { headers: { 'X-Device-Fingerprint': fingerprint } }
+      );
       const { access_token, user: userData } = response.data;
       
+      console.log('[AuthContext] Login success. User:', userData.email, 'Role:', userData.role);
+      
+      localStorage.setItem('token', access_token);
       setToken(access_token);
       setUser(userData);
-      localStorage.setItem('token', access_token);
+      const is_admin = userData.role === 'admin';
+      const name = userData.full_name || userData.email;
+      import('sonner').then(({ toast }) => {
+        toast.success(`Đăng nhập thành công! ${is_admin ? 'Quyền Admin: ' : ''}${name}`);
+      });
     } catch (err: any) {
-      console.error('Login failed:', err);
+      console.error('[AuthContext] Login failed:', err);
       const message = err.response?.data?.detail || err.message || 'Login failed';
       setError(message);
       throw err;
@@ -76,7 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.post('/auth/guest');
+      const fingerprint = await getDeviceFingerprint();
+      const response = await api.post('/auth/guest', null, {
+        headers: { 'X-Device-Fingerprint': fingerprint }
+      });
       const { access_token, user: userData } = response.data;
       
       setToken(access_token);

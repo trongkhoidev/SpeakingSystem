@@ -14,7 +14,7 @@ from app.services.gatekeeper_service import GatekeeperService
 from app.services.audio_preprocessor import AudioPreprocessor
 from app.services.blob_service import BlobService
 from sqlalchemy.orm import Session
-from app.models.sqlalchemy_models import PracticeAnswer
+from app.models.sqlalchemy_models import PracticeAnswer, TestAnswer, TestSession
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
@@ -186,27 +186,49 @@ class AssessmentService:
             
             is_custom = custom_question_id is not None
             
-            answer = PracticeAnswer(
-                session_id=session_id,
-                question_id=None if is_custom else question_id,
-                custom_question_id=custom_question_id,
-                student_transcript=transcript,
-                audio_blob_url=uploaded_name,
-                duration_seconds=duration,
-                azure_result=json.dumps(azure_result.raw_response),
-                llm_result=json.dumps(feedback_json),
-                accuracy_score=azure_result.accuracy_score,
-                fluency_score=azure_result.fluency_score,
-                completeness_score=azure_result.completeness_score,
-                prosody_score=azure_result.prosody_score,
-                # Use Python attribute names (aliases are only for JSON serialization)
-                fc_band=band_scores.fluency_coherence,
-                lr_band=band_scores.lexical_resource,
-                gra_band=band_scores.grammatical_accuracy,
-                pronunciation_band=band_scores.pronunciation,
-                overall_band=overall_band,
-                word_details=json.dumps(colored_tokens)
-            )
+            # Check if this is a Test Session or Practice Session
+            is_test_session = db.query(TestSession).filter(TestSession.id == session_id).first() is not None
+            
+            if is_test_session:
+                answer = TestAnswer(
+                    test_session_id=session_id,
+                    question_id=question_id,
+                    student_transcript=transcript,
+                    audio_blob_url=uploaded_name,
+                    azure_result=json.dumps(azure_result.raw_response),
+                    llm_result=json.dumps(feedback_json),
+                    accuracy_score=azure_result.accuracy_score,
+                    fluency_score=azure_result.fluency_score,
+                    completeness_score=azure_result.completeness_score,
+                    prosody_score=azure_result.prosody_score,
+                    fc_band=band_scores.fluency_coherence,
+                    lr_band=band_scores.lexical_resource,
+                    gra_band=band_scores.grammatical_accuracy,
+                    pronunciation_band=band_scores.pronunciation,
+                    overall_band=overall_band,
+                    word_details=json.dumps(colored_tokens)
+                )
+            else:
+                answer = PracticeAnswer(
+                    session_id=session_id,
+                    question_id=None if is_custom else question_id,
+                    custom_question_id=custom_question_id,
+                    student_transcript=transcript,
+                    audio_blob_url=uploaded_name,
+                    duration_seconds=duration,
+                    azure_result=json.dumps(azure_result.raw_response),
+                    llm_result=json.dumps(feedback_json),
+                    accuracy_score=azure_result.accuracy_score,
+                    fluency_score=azure_result.fluency_score,
+                    completeness_score=azure_result.completeness_score,
+                    prosody_score=azure_result.prosody_score,
+                    fc_band=band_scores.fluency_coherence,
+                    lr_band=band_scores.lexical_resource,
+                    gra_band=band_scores.grammatical_accuracy,
+                    pronunciation_band=band_scores.pronunciation,
+                    overall_band=overall_band,
+                    word_details=json.dumps(colored_tokens)
+                )
             db.add(answer)
             db.commit()
             db.refresh(answer)

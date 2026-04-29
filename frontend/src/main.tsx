@@ -9,9 +9,13 @@ import { Loader2 } from 'lucide-react';
 const DashboardPage   = lazy(() => import('./pages/DashboardPage').then(m   => ({ default: m.DashboardPage })));
 const PracticeModePage = lazy(() => import('./pages/PracticeModePage').then(m => ({ default: m.PracticeModePage })));
 const TestExamPage    = lazy(() => import('./pages/TestExamPage').then(m    => ({ default: m.TestExamPage })));
-const AdminDashboard  = lazy(() => import('./pages/AdminDashboard').then(m  => ({ default: m.AdminDashboard })));
-const PlansPage       = lazy(() => import('./pages/PlansPage').then(m       => ({ default: m.PlansPage })));
-const ProfilePage     = lazy(() => import('./pages/ProfilePage').then(m     => ({ default: m.ProfilePage })));
+const AdminLayout          = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboardPage   = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AccountManagementPage = lazy(() => import('./pages/admin/AccountManagementPage').then(m => ({ default: m.AccountManagementPage })));
+const TokenAllocationPage   = lazy(() => import('./pages/admin/TokenAllocationPage').then(m => ({ default: m.TokenAllocationPage })));
+const PlanManagementPage    = lazy(() => import('./pages/admin/PlanManagementPage').then(m => ({ default: m.PlanManagementPage })));
+const PlansPage             = lazy(() => import('./pages/PlansPage').then(m => ({ default: m.PlansPage })));
+const ProfilePage           = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 
 const LoadingScreen = () => (
   <div
@@ -56,8 +60,11 @@ export function App() {
             </Route>
 
             <Route element={<ProtectedRoute adminOnly />}>
-              <Route element={<AppLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
+              <Route element={<AdminLayout />}>
+                <Route path="/admin"          element={<AdminDashboardPage />} />
+                <Route path="/admin/accounts" element={<AccountManagementPage />} />
+                <Route path="/admin/tokens"   element={<TokenAllocationPage />} />
+                <Route path="/admin/plans"    element={<PlanManagementPage />} />
               </Route>
             </Route>
 

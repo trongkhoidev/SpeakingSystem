@@ -27,14 +27,23 @@ class TrialService:
         return max(0, TOTAL_TRIAL_POINTS - TrialService._used_points(trial))
 
     @staticmethod
-    def get_or_create_trial(db: Session, guest_id: str) -> GuestTrial:
-        """Fetch or initialize a guest trial record."""
+    def get_or_create_trial(db: Session, guest_id: str, user_agent: str = None, ip: str = None) -> GuestTrial:
+        """Fetch or initialize a guest trial record based on device fingerprint."""
         trial = db.query(GuestTrial).filter(GuestTrial.guest_id == guest_id).first()
         if not trial:
-            trial = GuestTrial(guest_id=guest_id)
+            trial = GuestTrial(
+                guest_id=guest_id,
+                user_agent=user_agent,
+                last_ip=ip
+            )
             db.add(trial)
             db.commit()
             db.refresh(trial)
+        else:
+            # Update last known IP/UA if provided
+            if user_agent: trial.user_agent = user_agent
+            if ip: trial.last_ip = ip
+            db.commit()
         return trial
 
     @staticmethod

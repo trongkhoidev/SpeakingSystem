@@ -10,7 +10,8 @@ import {
   ToggleLeft,
   ChevronRight,
   User,
-  Zap
+  Zap,
+  Clock
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -19,6 +20,7 @@ interface TestSetupModalProps {
   onClose: () => void;
   onStart: (config: TestConfig) => void;
   initialMode?: 'full' | 'part1' | 'part2' | 'part3';
+  isStarting?: boolean;
 }
 
 export interface TestConfig {
@@ -29,7 +31,7 @@ export interface TestConfig {
   timeLimitEnabled: boolean;
 }
 
-export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' }: TestSetupModalProps) {
+export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full', isStarting = false }: TestSetupModalProps) {
   const [config, setConfig] = useState<TestConfig>({
     mode: initialMode,
     examinerVoice: 'female-uk',
@@ -192,11 +194,21 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
         {/* Start Button */}
         <div className="pt-4">
           <button 
+            disabled={isStarting}
             onClick={() => onStart(config)}
-            className="btn btn-primary w-full py-4 text-[15px] shadow-indigo-100 flex items-center justify-center gap-2"
+            className="btn btn-primary w-full py-4 text-[15px] shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-70"
           >
-            Bắt đầu bài thi ngay
-            <ChevronRight className="w-4 h-4" />
+            {isStarting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Đang khởi tạo...
+              </>
+            ) : (
+              <>
+                Bắt đầu bài thi ngay
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
           </button>
           <p className="text-[10px] text-[#9CA3AF] text-center mt-4 uppercase tracking-widest font-bold">
             Mic check: Đảm bảo bạn đang ở nơi yên tĩnh

@@ -3,6 +3,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Admin Suite Premium Styles ── */
+.admin-sidebar {
+  background: #FDFDFF;
+  border-right: 1px solid #E2E8F0;
+}
+
+.admin-sidebar .sidebar-item.active {
+  background: #EEF0FD;
+  color: #4361EE;
+  font-weight: 700;
+}
+
+.admin-sidebar .sidebar-item {
+  color: #64748B;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-sidebar .sidebar-item:hover {
+  background: #F8FAFC;
+  transform: translateX(4px);
+}
+
+.badge--danger {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FEE2E2;
+}
+
+.badge--success {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid #D1FAE5;
+}
+
+.hover-lift {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(67, 97, 238, 0.15);
+}
+
+.hover-lift-sm {
+  transition: transform 0.2s;
+}
+
+.hover-lift-sm:hover {
+  transform: translateY(-2px);
+}
+
+/* Modal Overlay with Blur */
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(8px);
+}
+
 *,
 *::before,
 *::after {

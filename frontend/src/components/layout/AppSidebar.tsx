@@ -13,8 +13,7 @@ const NAV_ITEMS = [
 ];
 
 export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, onToggle: () => void }) {
-  const { logout, user } = useAuth() as any;
-  const navigate = useNavigate();
+  const { user } = useAuth() as any;
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
@@ -72,7 +71,9 @@ export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, on
             >
               {user.email ? user.email.split('@')[0] : user.name || 'Người dùng'}
             </div>
-            <div style={{ fontSize: 11, color: '#9CA3AF' }}>IELTS Learner</div>
+            <div style={{ fontSize: 11, color: user.role === 'admin' ? '#4361EE' : '#9CA3AF', fontWeight: user.role === 'admin' ? 700 : 400 }}>
+              {user.role === 'admin' ? 'Administrator' : 'IELTS Learner'}
+            </div>
           </div>
         </div>
       )}
@@ -94,17 +95,6 @@ export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, on
         </NavLink>
       ))}
 
-      {user?.role === 'admin' && (
-        <NavLink
-          to="/admin"
-          className={({ isActive }) =>
-            `sidebar-item${isActive ? ' active' : ''}`
-          }
-        >
-          <ShieldCheck size={16} />
-          {!isCollapsed && <span>Admin Dashboard</span>}
-        </NavLink>
-      )}
 
       {!isCollapsed && <div className="sidebar-divider" />}
 
@@ -154,27 +144,6 @@ export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, on
 
       {/* Push bottom actions down */}
       <div style={{ flex: 1 }} />
-
-      {!isCollapsed && <div className="sidebar-divider" />}
-
-      <NavLink
-        to="/profile"
-        className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}
-      >
-        <Settings size={16} />
-        {!isCollapsed && <span>Thông tin & Cài đặt</span>}
-      </NavLink>
-
-      <button
-        className={`sidebar-item ${user?.role === 'guest' ? '' : 'sidebar-item--danger'}`}
-        onClick={() => {
-          logout?.();
-          navigate('/login', { replace: true });
-        }}
-      >
-        {user?.role === 'guest' ? <LogIn size={16} /> : <LogOut size={16} />}
-        {!isCollapsed && (user?.role === 'guest' ? 'Đăng nhập' : 'Đăng xuất')}
-      </button>
     </aside>
   );
 }

@@ -17,9 +17,11 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: str
-    day_streak: int = 0
-    estimated_band: float = 0.0
+    day_streak: Optional[int] = 0
+    estimated_band: Optional[float] = 0.0
     role: str = "user"
+    status: str = "active"
+    token_balance: int = 0
     created_at: Optional[str] = None
 
     class Config:
@@ -149,6 +151,7 @@ class PlanInfo(BaseModel):
     test_start_cost: int
     daily_trial_bonus: int
     price_vnd: int
+    bank_account_info: Optional[str] = None
 
 
 class UsageStatus(BaseModel):
@@ -171,6 +174,7 @@ class ExamSetBase(BaseModel):
     description: Optional[str] = None
     estimated_minutes: int = 14
     difficulty: str = "medium"
+    tag: Optional[str] = None
 
 
 class ExamSet(ExamSetBase):

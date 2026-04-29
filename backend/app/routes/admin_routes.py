@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from typing import List, Dict, Any
 from app.core.database import get_db
 from app.routes.auth_routes import get_current_user
@@ -39,64 +39,104 @@ def check_admin(current_user: Any):
             detail="Admin access required"
         )
 
+
 @router.get("/dashboard")
 def get_admin_dashboard(
     db: Session = Depends(get_db),
     admin_user: Any = Depends(get_current_user)
 ):
-    """Get high-level aggregate stats for the admin dashboard."""
+    """Get high-level aggregate stats for the admin dashboard (Optimized)."""
     check_admin(admin_user)
     
-    total_users = db.query(User).count()
+    from app.models.sqlalchemy_models import GuestTrial
+    
+    # 1. Basic Stats (Registered Users Only)
+    total_users = db.query(User).filter(User.role != "guest").count()
     total_practices = db.query(PracticeAnswer).count()
     total_tests = db.query(TestSession).count()
-
-    # Engagement metrics
+    
     avg_duration = db.query(func.avg(PracticeAnswer.duration_seconds)).scalar() or 0
     avg_rating = db.query(func.avg(UserFeedback.rating)).scalar() or 0
-    avg_rating = float(avg_rating)
+    low_feedbacks = db.query(UserFeedback).filter(UserFeedback.rating <= 2).count()
 
-    # Active users in last 7 days (based on practice answer and test started time)
-    threshold = datetime.utcnow() - timedelta(days=7)
-    practice_rows = db.query(PracticeAnswer.session_id, PracticeAnswer.created_at).all()
-    session_map = {
-        s.id: s.user_id for s in db.query(PracticeSession.id, PracticeSession.user_id).all()
-    }
-    active_users = set()
-    for session_id, created_at in practice_rows:
-        dt = _parse_dt(created_at)
-        if dt and dt >= threshold:
-            user_id = session_map.get(session_id)
-            if user_id:
-                active_users.add(user_id)
+    # 2. Guest Trial Analytics
+    total_trials = db.query(GuestTrial).count()
+    converted_trials = db.query(GuestTrial).filter(GuestTrial.converted_user_id.isnot(None)).count()
+    conversion_rate = (converted_trials / max(1, total_trials)) * 100
 
-    test_rows = db.query(TestSession.user_id, TestSession.started_at).all()
-    for user_id, started_at in test_rows:
-        dt = _parse_dt(started_at)
-        if dt and dt >= threshold and user_id:
-            active_users.add(user_id)
+    # 3. 7-Day Retention & Active Users (SQL Optimized)
+    threshold_7d = (datetime.utcnow() - timedelta(days=7)).isoformat()[:10]
+    
+    # Active user count via UNION of activities (excluding guests)
+    active_users_query = text("""
+        SELECT COUNT(DISTINCT user_id) FROM (
+            SELECT user_id FROM test_sessions WHERE started_at >= :t AND user_id NOT LIKE 'guest-%'
+            UNION
+            SELECT ps.user_id FROM practice_answers pa 
+            JOIN practice_sessions ps ON pa.session_id = ps.id 
+            WHERE pa.created_at >= :t AND ps.user_id NOT LIKE 'guest-%'
+        ) as active_base
+    """)
+    active_users_7d = db.execute(active_users_query, {"t": threshold_7d}).scalar() or 0
+    retention_7d = (active_users_7d / max(1, total_users) * 100)
 
-    active_users_7d = len(active_users)
-    retention_7d = (active_users_7d / total_users * 100) if total_users > 0 else 0.0
-
-    # Satisfaction index (0-100):
-    # 50% explicit rating + 30% engagement + 20% retention
-    explicit_rating_score = (avg_rating / 5.0) * 100 if avg_rating > 0 else 0.0
-    active_base = max(1, active_users_7d)
-    avg_actions_per_active = (total_practices + total_tests) / active_base
-    engagement_score = min(100.0, (avg_actions_per_active / 20.0) * 100.0)
+    # 4. Refined Satisfaction Index
+    # Satisfaction = 0.35*Rating + 0.25*Engagement + 0.25*Retention + 0.15*Conversion
+    avg_actions_per_active = (total_practices + total_tests) / max(1, active_users_7d)
+    explicit_rating_score = (float(avg_rating) / 5.0) * 100 if avg_rating > 0 else 0.0
+    engagement_score = min(100.0, (avg_actions_per_active / 15.0) * 100.0) # Target 15 actions/week
+    
     satisfaction_index = round(
-        (explicit_rating_score * 0.5) + (engagement_score * 0.3) + (retention_7d * 0.2),
+        (explicit_rating_score * 0.35) + 
+        (engagement_score * 0.25) + 
+        (retention_7d * 0.25) + 
+        (conversion_rate * 0.15), 
         1
     )
 
-    low_feedbacks = db.query(UserFeedback).filter(UserFeedback.rating <= 2).count()
+    # 5. 30-Day Trends (Grouped SQL Queries)
+    threshold_30d = (datetime.utcnow() - timedelta(days=30)).isoformat()[:10]
+    
+    # User growth by day (Registered only)
+    user_growth_raw = db.execute(text("""
+        SELECT LEFT(created_at, 10) as day, COUNT(*) as count 
+        FROM users 
+        WHERE created_at >= :t AND role != 'guest'
+        GROUP BY LEFT(created_at, 10)
+        ORDER BY day ASC
+    """), {"t": threshold_30d}).fetchall()
+    
+    # Activity by day
+    activity_raw = db.execute(text("""
+        SELECT day, SUM(p_count) as practices, SUM(t_count) as tests FROM (
+            SELECT LEFT(created_at, 10) as day, COUNT(*) as p_count, 0 as t_count 
+            FROM practice_answers WHERE created_at >= :t GROUP BY LEFT(created_at, 10)
+            UNION ALL
+            SELECT LEFT(started_at, 10) as day, 0 as p_count, COUNT(*) as t_count 
+            FROM test_sessions WHERE started_at >= :t GROUP BY LEFT(started_at, 10)
+        ) as daily_activity
+        GROUP BY day ORDER BY day ASC
+    """), {"t": threshold_30d}).fetchall()
+
+    # Fill gaps for 30 days to ensure smooth charts
+    user_growth_trend = []
+    activity_trend = []
+    user_map = {r[0]: r[1] for r in user_growth_raw}
+    act_map = {r[0]: (r[1], r[2]) for r in activity_raw}
+    
+    for i in range(29, -1, -1):
+        d = (datetime.utcnow() - timedelta(days=i)).date().isoformat()
+        user_growth_trend.append({"date": d, "count": user_map.get(d, 0)})
+        p, t = act_map.get(d, (0, 0))
+        activity_trend.append({"date": d, "practices": p, "tests": t, "total": p + t})
 
     return {
         "stats": {
             "totalUsers": total_users,
             "totalPractices": total_practices,
             "totalTests": total_tests,
+            "totalTrials": total_trials,
+            "conversionRate": round(conversion_rate, 1),
             "avgDurationPerAnswer": round(float(avg_duration), 1),
             "avgSatisfaction": round(float(avg_rating), 1),
             "activeUsers7d": active_users_7d,
@@ -104,14 +144,19 @@ def get_admin_dashboard(
             "satisfactionIndex": satisfaction_index,
             "lowRatingCount": low_feedbacks
         },
-        "logic": {
-            "formula": "0.5*explicit_rating + 0.3*engagement + 0.2*retention_7d",
-            "explicit_rating_score": round(explicit_rating_score, 1),
-            "engagement_score": round(engagement_score, 1),
-            "retention_score": round(retention_7d, 1),
-            "avgActionsPerActiveUser": round(avg_actions_per_active, 2)
+        "trends": {
+            "userGrowth": user_growth_trend,
+            "activity": activity_trend
         },
-        "trends": []
+        "logic": {
+            "formula": "0.35*Rating + 0.25*Engagement + 0.25*Retention + 0.15*Conversion",
+            "scores": {
+                "rating": round(explicit_rating_score, 1),
+                "engagement": round(engagement_score, 1),
+                "retention": round(retention_7d, 1),
+                "conversion": round(conversion_rate, 1)
+            }
+        }
     }
 
 @router.get("/users", response_model=List[UserSchema])
@@ -119,9 +164,27 @@ def list_users(
     db: Session = Depends(get_db),
     admin_user: Any = Depends(get_current_user)
 ):
-    """List all registered users."""
+    """List all registered users with their token balances."""
     check_admin(admin_user)
-    return db.query(User).all()
+    
+    from app.models.sqlalchemy_models import UserTokenWallet
+    
+    # Query registered users (non-guests) and join with wallet to get token_balance
+    results = db.query(User, UserTokenWallet.token_balance).\
+        outerjoin(UserTokenWallet, User.id == UserTokenWallet.user_id).\
+        filter(User.role != "guest").all()
+    
+    users = []
+    for user_obj, token_balance in results:
+        # Map the token_balance back to the user object dynamically for the schema
+        user_obj.token_balance = token_balance or 0
+        user_obj.day_streak = user_obj.day_streak or 0
+        user_obj.estimated_band = float(user_obj.estimated_band or 0.0)
+        user_obj.role = user_obj.role or "user"
+        user_obj.status = user_obj.status or "active"
+        users.append(user_obj)
+        
+    return users
 
 @router.get("/feedback", response_model=List[UserFeedbackSchema])
 def list_feedback(
@@ -237,6 +300,107 @@ def list_plan_configs(
             for code in PLAN_DEFS.keys()
         ]
     }
+@router.get("/users/{user_id}/detail")
+def get_user_detail(
+    user_id: str,
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Get comprehensive detail for a specific user."""
+    check_admin(admin_user)
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get wallet
+    wallet = TokenService.get_or_create_wallet(db, user)
+    
+    # Get subscription history
+    sub_requests = (
+        db.query(SubscriptionRequest)
+        .filter(SubscriptionRequest.user_id == user_id)
+        .order_by(SubscriptionRequest.created_at.desc())
+        .all()
+    )
+    
+    # Aggregated stats
+    practice_count = db.query(PracticeAnswer).join(PracticeSession).filter(PracticeSession.user_id == user_id).count()
+    test_count = db.query(TestSession).filter(TestSession.user_id == user_id).count()
+    
+    avg_band = db.query(func.avg(TestSession.overall_band)).filter(TestSession.user_id == user_id).scalar() or 0
+    
+    return {
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role,
+            "status": user.status,
+            "avatar_url": user.avatar_url,
+            "created_at": user.created_at,
+            "estimated_band": float(user.estimated_band or 0),
+            "day_streak": user.day_streak
+        },
+        "wallet": {
+            "plan_code": wallet.plan_code,
+            "token_balance": wallet.token_balance,
+            "monthly_token_used": wallet.monthly_token_used,
+            "monthly_token_limit": wallet.monthly_token_limit,
+            "lifetime_token_used": wallet.lifetime_token_used,
+            "last_reset": wallet.last_token_reset_at
+        },
+        "stats": {
+            "total_practices": practice_count,
+            "total_tests": test_count,
+            "avg_test_band": round(float(avg_band), 1)
+        },
+        "subscription_history": sub_requests
+    }
+
+
+@router.post("/users/{user_id}/status")
+def update_user_status(
+    user_id: str,
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Admin can activate or suspend a user account."""
+    check_admin(admin_user)
+    new_status = payload.get("status")
+    if new_status not in ["active", "suspended"]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.status = new_status
+    db.commit()
+    return {"message": f"User status updated to {new_status}", "user_id": user_id, "status": new_status}
+
+
+@router.post("/users/{user_id}/role")
+def update_user_role(
+    user_id: str,
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Admin can change a user's role (admin/user)."""
+    check_admin(admin_user)
+    new_role = payload.get("role")
+    if new_role not in ["admin", "user"]:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.role = new_role
+    db.commit()
+    return {"message": f"User role updated to {new_role}", "user_id": user_id, "role": new_role}
 
 
 @router.put("/billing/plans/{plan_code}")
@@ -259,7 +423,7 @@ def update_plan_config(
 
     allowed_fields = {
         "name", "monthly_tokens", "practice_cost",
-        "test_start_cost", "daily_trial_bonus", "price_vnd"
+        "test_start_cost", "daily_trial_bonus", "price_vnd", "bank_account_info"
     }
     for k, v in payload.items():
         if k in allowed_fields and v is not None:
@@ -268,3 +432,76 @@ def update_plan_config(
     row.updated_at = datetime.utcnow().isoformat()
     db.commit()
     return {"message": "Plan updated", "plan": {"code": plan_code, **TokenService.get_effective_plan(db, plan_code)}}
+
+
+@router.post("/tokens/allocate")
+def allocate_tokens(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Admin manually grants tokens to a user."""
+    check_admin(admin_user)
+    
+    target_email = payload.get("email")
+    amount = payload.get("amount")
+    reason = payload.get("reason", "Manual allocation")
+    
+    if not target_email or not amount or amount <= 0:
+        raise HTTPException(status_code=400, detail="Email and positive amount required")
+    
+    # Find user
+    user = db.query(User).filter(User.email == target_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update wallet
+    wallet = TokenService.get_or_create_wallet(db, user)
+    wallet.token_balance = (wallet.token_balance or 0) + amount
+    
+    # Create audit record
+    from app.models.sqlalchemy_models import TokenAllocation
+    admin_id = admin_user.get("id") if isinstance(admin_user, dict) else admin_user.id
+    allocation = TokenAllocation(
+        admin_id=admin_id,
+        user_id=user.id,
+        amount=amount,
+        reason=reason
+    )
+    db.add(allocation)
+    db.commit()
+    
+    return {
+        "message": f"Allocated {amount} tokens to {target_email}",
+        "new_balance": wallet.token_balance
+    }
+
+
+@router.get("/tokens/history")
+def get_token_allocation_history(
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Get history of all manual token allocations."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import TokenAllocation
+    
+    rows = (
+        db.query(TokenAllocation)
+        .order_by(TokenAllocation.created_at.desc())
+        .limit(100)
+        .all()
+    )
+    
+    result = []
+    for r in rows:
+        result.append({
+            "id": r.id,
+            "admin_email": db.query(User.email).filter(User.id == r.admin_id).scalar(),
+            "recipient_email": db.query(User.email).filter(User.id == r.user_id).scalar(),
+            "amount": r.amount,
+            "reason": r.reason,
+            "created_at": r.created_at
+        })
+        
+    return result

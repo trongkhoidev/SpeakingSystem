@@ -5,7 +5,14 @@ import json
 def seed_data():
     db = SessionLocal()
     try:
+        # 0. Clear existing data to avoid duplicates (Cascade might be needed if foreign keys exist)
+        print("Clearing existing Topics and Questions...")
+        db.query(Question).delete()
+        db.query(Topic).delete()
+        db.commit()
+
         # 1. Part 1 Topics & Questions
+        print("Seeding Part 1 data...")
         part1_data = [
             {
                 "topic": "Hometown",
@@ -297,6 +304,27 @@ def seed_data():
             for q_text in item["questions"]:
                 q = Question(question_text=q_text, part=3, topic_id=topic.id)
                 db.add(q)
+        
+        db.commit()
+
+        # 3.5 Link Part 3 to Part 2 (New logic for Smart Fallback)
+        print("Linking Part 3 to Part 2 questions...")
+        p2_questions = db.query(Question).filter(Question.part == 2).all()
+        for p2 in p2_questions:
+            # Find Part 3 questions that match the same "theme"
+            # For simplicity in seed, we use name matching or just pick a topic
+            theme = "Tourism" if "city" in p2.question_text.lower() else \
+                    "Education & Career" if "decision" in p2.question_text.lower() else \
+                    "Technology and Society" if "website" in p2.question_text.lower() else \
+                    "Education & Career" if "person" in p2.question_text.lower() else \
+                    "Health and Wellness"
+            
+            p3_topic = db.query(Topic).filter(Topic.part == 3, Topic.name == theme).first()
+            if p3_topic:
+                p3_questions = db.query(Question).filter(Question.topic_id == p3_topic.id).all()
+                for p3 in p3_questions:
+                    p3.linked_part2_id = p2.id
+        db.commit()
 
         db.commit()
         print("Topics and questions seeded successfully!")
@@ -318,7 +346,8 @@ def seed_data():
                 "p1_topic": "Hometown",
                 "p2_topic": "Describe a beautiful city you have visited.",
                 "p3_topic": "Tourism",
-                "difficulty": "easy"
+                "difficulty": "easy",
+                "tag": "Forecast Q2/2026"
             },
             {
                 "name": "Set 2: Education & Career",
@@ -326,7 +355,8 @@ def seed_data():
                 "p1_topic": "Work or Study",
                 "p2_topic": "Describe an important decision you made in your life.",
                 "p3_topic": "Education & Career",
-                "difficulty": "medium"
+                "difficulty": "medium",
+                "tag": "Forecast Q2/2026"
             },
             {
                 "name": "Set 3: Technology & Society",
@@ -334,7 +364,8 @@ def seed_data():
                 "p1_topic": "Technology",
                 "p2_topic": "Describe a website you visit frequently.",
                 "p3_topic": "Social Media",
-                "difficulty": "hard"
+                "difficulty": "hard",
+                "tag": "Forecast Q1/2026"
             },
             {
                 "name": "Set 4: Lifestyle & Hobbies",
@@ -342,7 +373,8 @@ def seed_data():
                 "p1_topic": "Daily Routine",
                 "p2_topic": "Describe a book you have recently read.",
                 "p3_topic": "Cultural Identity",
-                "difficulty": "medium"
+                "difficulty": "medium",
+                "tag": "Forecast Q1/2026"
             },
             {
                 "name": "Set 5: Environment & Future",
@@ -350,7 +382,53 @@ def seed_data():
                 "p1_topic": "Environment",
                 "p2_topic": "Describe a place you have visited that you would like to go back to.",
                 "p3_topic": "Environment",
-                "difficulty": "hard"
+                "difficulty": "hard",
+                "tag": "General Pool"
+            },
+            {
+                "name": "Set 6: Art & Creativity",
+                "description": "Discussing art galleries, hobbies, and the role of creativity in society.",
+                "p1_topic": "Leisure Time",
+                "p2_topic": "Describe a special gift you gave to someone.",
+                "p3_topic": "Cultural Identity",
+                "difficulty": "medium",
+                "tag": "Forecast Q2/2026"
+            },
+            {
+                "name": "Set 7: Science & Discovery",
+                "description": "Exploration of scientific impact and personal learning journeys.",
+                "p1_topic": "Technology",
+                "p2_topic": "Describe an important decision you made in your life.",
+                "p3_topic": "Technology and Society",
+                "difficulty": "hard",
+                "tag": "Forecast Q1/2026"
+            },
+            {
+                "name": "Set 8: Reading & Knowledge",
+                "description": "Deep dive into literacy, books, and the evolution of reading habits.",
+                "p1_topic": "Reading",
+                "p2_topic": "Describe a book you have recently read.",
+                "p3_topic": "Education & Career",
+                "difficulty": "easy",
+                "tag": "Forecast Q2/2026"
+            },
+            {
+                "name": "Set 9: Sports & Health",
+                "description": "Conversations about physical activity, popular sports, and healthy living.",
+                "p1_topic": "Sports",
+                "p2_topic": "Describe a place you have visited that you would like to go back to.",
+                "p3_topic": "Health and Wellness",
+                "difficulty": "medium",
+                "tag": "Forecast Q1/2026"
+            },
+            {
+                "name": "Set 10: Digital Life",
+                "description": "Examining social media, websites, and the impact of the internet.",
+                "p1_topic": "Technology",
+                "p2_topic": "Describe a website you visit frequently.",
+                "p3_topic": "Social Media",
+                "difficulty": "hard",
+                "tag": "Forecast Q2/2026"
             }
         ]
 
@@ -371,7 +449,8 @@ def seed_data():
                     description=es["description"],
                     question_ids_json=json.dumps(q_ids_dict),
                     estimated_minutes=14,
-                    difficulty=es["difficulty"]
+                    difficulty=es["difficulty"],
+                    tag=es.get("tag")
                 )
                 db.add(exam_set)
 

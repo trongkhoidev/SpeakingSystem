@@ -57,7 +57,7 @@ async def assess_speech(
         user_id = ""
         
         if isinstance(current_user, dict):
-            user_id = current_user.get("id", "")
+            user_id = current_user.get("fingerprint", "")
             user_role = current_user.get("role", "user")
         else:
             user_id = current_user.id
@@ -143,5 +143,5 @@ async def get_trial_status(
     db: Session = Depends(get_db)
 ):
     """Check remaining trial uses for the current user/guest."""
-    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    user_id = current_user.get("fingerprint") if isinstance(current_user, dict) else current_user.id
     return TrialService.get_status(db, user_id)

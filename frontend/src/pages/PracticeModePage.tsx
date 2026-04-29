@@ -952,7 +952,7 @@ export function PracticeModePage() {
               <div className="space-y-3">
                 <h2 className="text-[32px] font-black text-slate-900 tracking-tight leading-tight">Hết lượt dùng thử!</h2>
                 <p className="text-[15px] text-slate-500 font-medium leading-relaxed">
-                  Bạn đã khám phá hết các tính năng dành cho khách. Hãy đăng nhập để tiếp tục luyện tập, lưu lịch sử bài nói và nhận thêm token miễn phí mỗi ngày nhé!
+                  Bạn đã khám phá hết các tính năng dành cho khách. Hãy đăng nhập để tiếp tục luyện tập, lưu lịch sử bài nói và nhận thêm 💎 miễn phí mỗi ngày nhé!
                 </p>
               </div>
 
@@ -989,9 +989,9 @@ export function PracticeModePage() {
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-[32px] font-black text-slate-900 tracking-tight leading-tight">Hết Token luyện tập!</h2>
+                <h2 className="text-[32px] font-black text-slate-900 tracking-tight leading-tight">Hết 💎 luyện tập!</h2>
                 <p className="text-[15px] text-slate-500 font-medium leading-relaxed">
-                  Hệ thống cần token để thực hiện đánh giá AI chuyên sâu. Bạn có thể nâng cấp gói hội viên hoặc đợi nhận token miễn phí vào ngày mai.
+                  Hệ thống cần 💎 để thực hiện đánh giá AI chuyên sâu. Bạn có thể nâng cấp gói hội viên hoặc đợi nhận 💎 miễn phí vào ngày mai.
                 </p>
               </div>
 

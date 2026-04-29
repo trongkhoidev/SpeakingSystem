@@ -34,6 +34,7 @@ class User(Base):
     estimated_band = Column(DECIMAL(3, 1), default=0.0)
     streak_calendar = Column(NVARCHAR_MAX, nullable=True)  # JSON string
     role = Column(MSSQL_NVARCHAR(20), default="user")  # admin, user
+    status = Column(MSSQL_NVARCHAR(20), default="active")  # active, suspended
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     
     # Relationships
@@ -67,6 +68,7 @@ class Question(Base):
     cue_card_json = Column(NVARCHAR_MAX, nullable=True)  # Part 2 only - JSON
     order_index = Column(Integer, nullable=True)
     cefr_level = Column(MSSQL_NVARCHAR(10), nullable=True)
+    linked_part2_id = Column(String(36), ForeignKey("questions.id"), nullable=True)
     
     topic = relationship("Topic", back_populates="questions")
     practice_answers = relationship("PracticeAnswer", back_populates="question")
@@ -181,7 +183,17 @@ class TestAnswer(Base):
     azure_result = Column(NVARCHAR_MAX, nullable=True)
     llm_result = Column(NVARCHAR_MAX, nullable=True)
     
-    # IELTS Band score
+    # Azure sub-scores (0-100)
+    accuracy_score = Column(DECIMAL(5, 1), nullable=True)
+    fluency_score = Column(DECIMAL(5, 1), nullable=True)
+    completeness_score = Column(DECIMAL(5, 1), nullable=True)
+    prosody_score = Column(DECIMAL(5, 1), nullable=True)
+    
+    # IELTS Band scores (0-9)
+    fc_band = Column(DECIMAL(3, 1), nullable=True)
+    lr_band = Column(DECIMAL(3, 1), nullable=True)
+    gra_band = Column(DECIMAL(3, 1), nullable=True)
+    pronunciation_band = Column(DECIMAL(3, 1), nullable=True)
     overall_band = Column(DECIMAL(3, 1), nullable=True)
     
     # Word-level details (JSON)
@@ -212,9 +224,12 @@ class GuestTrial(Base):
     __tablename__ = "guest_trials"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    guest_id = Column(String(100), unique=True, index=True)  # Cookie or fingerprint
+    guest_id = Column(String(100), unique=True, index=True)  # Device fingerprint
     practice_count = Column(Integer, default=0)
     test_count = Column(Integer, default=0)
+    user_agent = Column(MSSQL_NVARCHAR(500), nullable=True)
+    last_ip = Column(MSSQL_NVARCHAR(50), nullable=True)
+    converted_user_id = Column(String(255), nullable=True) # ID of registered user if they convert
     last_active = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
 
@@ -249,6 +264,7 @@ class BillingPlan(Base):
     test_start_cost = Column(Integer, nullable=False, default=35)
     daily_trial_bonus = Column(Integer, nullable=False, default=15)
     price_vnd = Column(Integer, nullable=False, default=0)
+    bank_account_info = Column(NVARCHAR_MAX, nullable=True) # e.g. "Vietcombank - 123456789 - NGUYEN VAN A"
     updated_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
 
 
@@ -278,4 +294,20 @@ class ExamSet(Base):
     estimated_minutes = Column(Integer, default=14)
     difficulty = Column(MSSQL_NVARCHAR(20), default="medium")
     is_active = Column(Boolean, default=True)
+    tag = Column(MSSQL_NVARCHAR(100), nullable=True)  # e.g. "Forecast Q2/2026"
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
+
+
+class TokenAllocation(Base):
+    """Audit log for manual token allocations by admin."""
+    __tablename__ = "token_allocations"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    admin_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    amount = Column(Integer, nullable=False)
+    reason = Column(NVARCHAR_MAX, nullable=True)
+    created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
+
+    admin = relationship("User", foreign_keys=[admin_id])
+    recipient = relationship("User", foreign_keys=[user_id])

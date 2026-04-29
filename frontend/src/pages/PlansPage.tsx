@@ -3,7 +3,7 @@ import api from '@/lib/api';
 import { 
   Check, Zap, Star, ShieldCheck, CreditCard, 
   ArrowRight, Info, Gift, Facebook, Twitter, 
-  QrCode, Copy, CheckCircle2, X 
+  QrCode, Copy, CheckCircle2, X, Diamond
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -81,7 +81,7 @@ export function PlansPage() {
   const claimDaily = async () => {
     try {
       await api.post('/billing/claim-daily');
-      toast.success('Đã nhận token dùng thử hằng ngày!');
+      toast.success('Đã nhận 💎 dùng thử hằng ngày!');
       await loadData();
     } catch (e) {
       toast.error('Hôm nay bạn đã nhận rồi!');
@@ -98,7 +98,7 @@ export function PlansPage() {
     
     try {
       await api.post(`/billing/reward-follow/${platform}`);
-      toast.success(`Đang mở ${platform}... Token sẽ được cộng sau khi bạn fl!`);
+      toast.success(`Đang mở ${platform}... 💎 sẽ được cộng sau khi bạn follow!`);
       await loadData();
     } catch (e) {
       toast.error('Yêu cầu không hợp lệ hoặc đã được nhận.');
@@ -126,7 +126,7 @@ export function PlansPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl font-black text-slate-900 tracking-tight"
           >
-            Nâng cấp tài khoản & Token
+            Nâng cấp tài khoản & 💎
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}
@@ -182,7 +182,7 @@ export function PlansPage() {
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                 <UsageStat label="Gói hiện tại" value={usage.plan_name} sub="Hạn mức tháng" />
-                <UsageStat label="Token còn lại" value={usage.token_balance} sub="Khả dụng ngay" />
+                <UsageStat label="💎 còn lại" value={<div className="flex items-center gap-1">{usage.token_balance} <Diamond size={16} fill="#0EA5E9" color="#0EA5E9" /></div>} sub="Khả dụng ngay" />
                 <UsageStat label="Đã dùng" value={`${usage.monthly_token_used}/${usage.monthly_token_limit}`} sub="Tháng này" />
                 <UsageStat label="Cấp độ" value="Standard" sub="AI Examiner" />
               </div>
@@ -194,7 +194,7 @@ export function PlansPage() {
                 className="px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
               >
                 <Gift size={18} />
-                Nhận token hằng ngày
+                Nhận 💎 hằng ngày
               </button>
               <div className="flex gap-2">
                 <button 
@@ -249,7 +249,7 @@ export function PlansPage() {
       {/* ── Policies & Trust ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-10 border-t border-slate-100">
         <TrustInfo icon={ShieldCheck} title="Bảo mật thanh toán" desc="Giao dịch trực tiếp qua ngân hàng nội địa/MOMO cực kỳ an toàn." />
-        <TrustInfo icon={Info} title="Chính sách Token" desc="Token được cộng ngay sau khi admin duyệt. Không giới hạn thời gian sử dụng." />
+        <TrustInfo icon={Info} title="Chính sách 💎" desc="Kim cương được cộng ngay sau khi admin duyệt. Không giới hạn thời gian sử dụng." />
         <TrustInfo icon={CheckCircle2} title="Hỗ trợ 24/7" desc="Gặp vấn đề khi nạp? Liên hệ ngay Fanpage để được hỗ trợ tức thì." />
       </div>
 
@@ -287,15 +287,15 @@ export function PlansPage() {
                   </div>
 
                   <div className="space-y-4 pt-6 border-t border-slate-200">
-                    <FeatureItem label={`${selectedPlan.monthly_tokens} Token mỗi tháng`} />
-                    <FeatureItem label={`${selectedPlan.practice_cost} token / lần luyện`} />
-                    <FeatureItem label={`${selectedPlan.test_start_cost} token / bài test`} />
+                    <FeatureItem label={<span className="flex items-center gap-1">{selectedPlan.monthly_tokens} 💎 mỗi tháng</span>} />
+                    <FeatureItem label={<span className="flex items-center gap-1">{selectedPlan.practice_cost} 💎 / lần luyện</span>} />
+                    <FeatureItem label={<span className="flex items-center gap-1">{selectedPlan.test_start_cost} 💎 / bài test</span>} />
                     <FeatureItem label="Hỗ trợ phân tích chuyên sâu" />
                   </div>
 
                   <div className="pt-6">
                     <p className="text-xs text-slate-400 font-medium leading-relaxed italic">
-                      * Bằng việc nhấn tiếp tục, bạn đồng ý với chính sách sử dụng token của LexiLearn.
+                      * Bằng việc nhấn tiếp tục, bạn đồng ý với chính sách sử dụng 💎 của LexiLearn.
                     </p>
                   </div>
                 </div>
@@ -334,7 +334,7 @@ export function PlansPage() {
                           </p>
                           <ul className="text-xs text-slate-500 space-y-2 list-disc pl-4 leading-relaxed">
                             <li>Vui lòng chuyển khoản đúng số tiền và nội dung.</li>
-                            <li>Token sẽ được nạp trong vòng 5-30 phút sau khi thanh toán.</li>
+                            <li>💎 sẽ được nạp trong vòng 5-30 phút sau khi thanh toán.</li>
                             <li>Nếu sau 1 giờ chưa nhận được, vui lòng liên hệ hỗ trợ.</li>
                           </ul>
                         </div>
@@ -435,11 +435,11 @@ export function PlansPage() {
   );
 }
 
-function UsageStat({ label, value, sub }: { label: string, value: string | number, sub: string }) {
+function UsageStat({ label, value, sub }: { label: string, value: React.ReactNode, sub: string }) {
   return (
     <div className="space-y-1">
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-      <p className="text-xl font-black text-slate-900">{value}</p>
+      <div className="text-xl font-black text-slate-900">{value}</div>
       <p className="text-[10px] text-slate-400 font-medium">{sub}</p>
     </div>
   );
@@ -475,10 +475,10 @@ function PricingCard({ plan, displayPrice, cycleLabel, delay, onSelect, isCurren
       </div>
 
       <div className="space-y-4 mb-10 flex-grow">
-        <Benefit icon={Zap} label={`${plan.monthly_tokens} Token mỗi tháng`} />
-        <Benefit icon={Check} label={`Luyện tập: ${plan.practice_cost} token`} />
-        <Benefit icon={Check} label={`Thi thử: ${plan.test_start_cost} token`} />
-        <Benefit icon={Gift} label={`Bonus: ${plan.daily_trial_bonus} / ngày`} />
+        <Benefit icon={Diamond} label={`${plan.monthly_tokens} 💎 mỗi tháng`} />
+        <Benefit icon={Check} label={`Luyện tập: ${plan.practice_cost} 💎`} />
+        <Benefit icon={Check} label={`Thi thử: ${plan.test_start_cost} 💎`} />
+        <Benefit icon={Gift} label={`Bonus: ${plan.daily_trial_bonus} 💎 / ngày`} />
         {isPlus && <Benefit icon={Star} label="Ưu tiên tính năng mới" bold />}
       </div>
 
@@ -512,13 +512,13 @@ function Benefit({ icon: Icon, label, bold = false }: { icon: any, label: string
   );
 }
 
-function FeatureItem({ label }: { label: string }) {
+function FeatureItem({ label }: { label: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
       <div className="bg-indigo-100 text-indigo-600 p-0.5 rounded-full">
         <Check size={12} strokeWidth={4} />
       </div>
-      <span className="text-[13px] font-bold text-slate-700">{label}</span>
+      <div className="text-[13px] font-bold text-slate-700">{label}</div>
     </div>
   );
 }

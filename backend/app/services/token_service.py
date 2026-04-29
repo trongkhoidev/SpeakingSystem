@@ -58,6 +58,7 @@ class TokenService:
             "test_start_cost": int(row.test_start_cost),
             "daily_trial_bonus": int(row.daily_trial_bonus),
             "price_vnd": int(row.price_vnd),
+            "bank_account_info": row.bank_account_info,
         }
 
     @staticmethod

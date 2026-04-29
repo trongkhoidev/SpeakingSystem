@@ -8,8 +8,9 @@ import { TestSetupModal, TestConfig } from '../components/test/TestSetupModal';
 import { TestRunner } from '../components/test/TestRunner';
 import { TestReport } from '../components/test/TestReport';
 import { BandBadge } from '../components/shared/BandBadge';
-import api from '@/lib/api';
-import { cn } from '@/lib/utils';
+import api from '../lib/api';
+import { cn } from '../lib/utils';
+import { ProfessionalModals } from '../components/shared/ProfessionalModals';
 
 interface TestHistoryItem {
   id: string;
@@ -64,6 +65,7 @@ interface ExamSet {
   description: string;
   estimated_minutes: number;
   difficulty: 'easy' | 'medium' | 'hard';
+  tag?: string;
 }
 
 type ExamModeId = 'full' | 'part1' | 'part2' | 'part3';
@@ -82,12 +84,8 @@ export function TestExamPage() {
   const [loadingExamSets, setLoadingExamSets] = useState(false);
   const [selectedExamSetId, setSelectedExamSetId] = useState<string | null>(null);
   const [testMode, setTestMode]             = useState<'sets' | 'random'>('sets');
-  const [currentTime, setCurrentTime]       = useState(new Date());
+  const [isStartingTest, setIsStartingTest] = useState(false);
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -119,19 +117,34 @@ export function TestExamPage() {
     fetchExamSets();
   }, [fetchExamSets]);
 
-  const startTest = async (config: TestConfig) => {
+  const startTest = async (config: any) => {
+    if (isStartingTest) return;
+    setIsStartingTest(true);
     try {
-      const res = await api.post('/test/start', { ...config, mode: selectedMode });
+      // Map frontend camelCase to backend snake_case
+      const backendConfig = {
+        examiner_voice: config.examiner_voice || config.examinerVoice,
+        question_count: config.question_count || config.questionCount,
+        follow_up_enabled: config.follow_up_enabled ?? config.followUpEnabled,
+        exam_set_id: config.exam_set_id,
+        parts_included: config.mode === 'part1' ? 1 : config.mode === 'part2' ? 2 : config.mode === 'part3' ? 3 : null
+      };
+
+      const res = await api.post('/test/start', backendConfig);
       setActiveSession(res.data.session);
       setQuestions(res.data.questions);
       setTestConfig(config);
       setIsSetupOpen(false);
+      // Refresh tokens in navbar
+      window.dispatchEvent(new CustomEvent('refresh-tokens'));
     } catch (e) {
       console.error('Failed to start test:', e);
+    } finally {
+      setIsStartingTest(false);
     }
   };
 
-  const handleTestFinish = async () => {
+  const handleTestFinish = useCallback(async () => {
     if (!activeSession) return;
     try {
       const res = await api.get(`/test/${activeSession.id}/report`);
@@ -141,7 +154,7 @@ export function TestExamPage() {
     } catch (e) {
       console.error('Failed to fetch report:', e);
     }
-  };
+  }, [activeSession, fetchHistory]);
 
   const openSetup = (mode: ExamModeId = 'full') => {
     setSelectedMode(mode);
@@ -201,40 +214,65 @@ export function TestExamPage() {
     <div className="w-full max-w-[1600px] mx-auto p-6 md:p-10 space-y-10 animate-in fade-in duration-500 bg-slate-50 min-h-screen">
       
       {/* ── HEADER (Đồng bộ Premium) ── */}
-      <header className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-xl relative overflow-hidden group">
+      <header className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-xl relative overflow-hidden group">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 opacity-80" />
         
-        {/* Tiêu đề trang */}
-        <div className="flex items-center gap-5 w-full">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
-            <Award className="w-6 h-6" />
+        {/* Tiêu đề trang & Action */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+              <Award className="w-6 h-6" />
+            </div>
+            <div className="flex-1 space-y-0.5">
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest opacity-60">Chế độ thi</p>
+              <h1 className="text-[22px] font-black text-slate-900 tracking-tight">IELTS Mock Test</h1>
+            </div>
           </div>
-          <div className="flex-1 space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest opacity-60">Chế độ thi</p>
-            <h1 className="text-[22px] font-black text-slate-900 tracking-tight">IELTS Mock Test</h1>
-          </div>
-        </div>
 
-        {/* Thời gian hiện tại */}
-        <div className="flex flex-col items-center justify-center border-x border-slate-100 px-6">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Thời gian hiện tại</p>
-          <div className="flex items-center gap-2 text-slate-900">
-            <Clock className="w-4 h-4 text-blue-600" />
-            <span className="text-[18px] font-black tabular-nums">
-              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-            </span>
+          <div className="flex items-center gap-6">
+            {/* Trạng thái nhanh */}
+            <div className="text-right hidden xl:block">
+               <p className="text-[11px] font-bold text-slate-500">Chuẩn bị sẵn sàng?</p>
+               <p className="text-[10px] text-slate-400 font-medium">Đảm bảo micro hoạt động tốt.</p>
+            </div>
+            
+            <button 
+              disabled={(testMode === 'sets' && !selectedExamSetId) || isStartingTest}
+              onClick={() => {
+                 if (testMode === 'random') {
+                   openSetup('full');
+                 } else {
+                   const selectedSet = examSets.find(s => s.id === selectedExamSetId);
+                   if (selectedSet) {
+                      startTest({
+                        mode: 'full',
+                        examiner_voice: localStorage.getItem('voice_pref') || 'female-uk',
+                        question_count: 5,
+                        follow_up_enabled: true,
+                        exam_set_id: selectedSet.id
+                      } as any);
+                   }
+                 }
+              }}
+              className="px-8 py-4 bg-blue-900 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shrink-0"
+            >
+              {isStartingTest ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Khởi tạo...
+                </>
+              ) : (
+                <>
+                  Bắt đầu bài thi ngay 
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+               <Target className="w-5 h-5" />
+            </div>
           </div>
-        </div>
-        
-        {/* Trạng thái nhanh */}
-        <div className="flex justify-end items-center gap-4">
-           <div className="text-right hidden xl:block">
-              <p className="text-[11px] font-bold text-slate-500">Chuẩn bị sẵn sàng?</p>
-              <p className="text-[10px] text-slate-400 font-medium">Đảm bảo micro hoạt động tốt.</p>
-           </div>
-           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-              <Target className="w-5 h-5" />
-           </div>
         </div>
       </header>
 
@@ -256,24 +294,24 @@ export function TestExamPage() {
               </div>
 
               {/* Mode Toggle */}
-              <div className="flex bg-slate-100 p-1 rounded-2xl w-fit shrink-0">
+              <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit shrink-0 gap-1">
                 <button 
                   onClick={() => setTestMode('sets')}
                   className={cn(
-                    "px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
-                    testMode === 'sets' ? "bg-white text-blue-600 shadow-md" : "text-slate-400 hover:text-slate-600"
+                    "px-8 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
+                    testMode === 'sets' ? "bg-white text-blue-600 shadow-xl" : "text-slate-400 hover:text-slate-600"
                   )}
                 >
-                  Bộ đề
+                  Forecast (Trúng tủ)
                 </button>
                 <button 
                   onClick={() => setTestMode('random')}
                   className={cn(
-                    "px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
-                    testMode === 'random' ? "bg-white text-blue-600 shadow-md" : "text-slate-400 hover:text-slate-600"
+                    "px-8 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
+                    testMode === 'random' ? "bg-white text-blue-600 shadow-xl" : "text-slate-400 hover:text-slate-600"
                   )}
                 >
-                  Tự do
+                  Smart Random
                 </button>
               </div>
             </div>
@@ -283,7 +321,7 @@ export function TestExamPage() {
                 {loadingExamSets ? (
                   [1,2,3].map(i => <div key={i} className="h-28 bg-slate-50 animate-pulse rounded-2xl" />)
                 ) : (
-                  examSets.map(set => (
+                  examSets?.map(set => (
                     <button 
                       key={set.id}
                       onClick={() => setSelectedExamSetId(set.id)}
@@ -302,10 +340,14 @@ export function TestExamPage() {
                         )}>
                           <FileText className="w-6 h-6" />
                         </div>
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                           <div className="flex items-center gap-3">
                             <span className="text-[16px] font-black text-slate-900 tracking-tight">{set.name}</span>
-                            <span className="bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">Official</span>
+                            {set.tag && (
+                              <span className="bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest shadow-lg shadow-blue-100">
+                                {set.tag}
+                              </span>
+                            )}
                           </div>
                           <p className="text-[12px] text-slate-500 font-medium line-clamp-1">{set.description}</p>
                           <div className="flex items-center gap-4 pt-1">
@@ -353,29 +395,6 @@ export function TestExamPage() {
               </div>
             )}
 
-            <button 
-              disabled={testMode === 'sets' && !selectedExamSetId}
-              onClick={() => {
-                 if (testMode === 'random') {
-                   openSetup('full');
-                 } else {
-                   const selectedSet = examSets.find(s => s.id === selectedExamSetId);
-                   if (selectedSet) {
-                      startTest({
-                        mode: 'full',
-                        examinerVoice: localStorage.getItem('voice_pref') || 'female-uk',
-                        questionCount: 5,
-                        followUpEnabled: true,
-                        exam_set_id: selectedSet.id
-                      } as any);
-                   }
-                 }
-              }}
-              className="w-full mt-10 py-5 bg-blue-900 text-white rounded-2xl font-black text-[15px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              Bắt đầu bài thi ngay 
-              <ArrowRight className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
@@ -419,12 +438,12 @@ export function TestExamPage() {
             <div className="space-y-3">
               {loading ? (
                 [1,2,3].map(i => <div key={i} className="h-16 bg-[#F8FAFC] animate-pulse rounded-xl" />)
-              ) : history.length === 0 ? (
+              ) : (history?.length === 0 || !history) ? (
                 <div className="p-10 text-center bg-[#F8FAFC] border-2 border-dashed border-[#E8ECF1] rounded-2xl">
                    <p className="text-[12px] text-[#94A3B8] font-bold">Chưa có lịch sử thi</p>
                 </div>
               ) : (
-                history.slice(0, 5).map((item) => (
+                history?.slice(0, 5).map((item) => (
                   <button 
                     key={item.id}
                     onClick={() => handleViewReport(item.id)}
@@ -453,7 +472,9 @@ export function TestExamPage() {
         onClose={() => setIsSetupOpen(false)}
         onStart={startTest}
         initialMode={selectedMode}
+        isStarting={isStartingTest}
       />
+      <ProfessionalModals />
     </div>
   );
 }

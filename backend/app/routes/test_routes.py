@@ -24,7 +24,7 @@ def start_test(
     db: Session = Depends(get_db)
 ):
     """Start a new test session and return questions."""
-    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    user_id = current_user.get("fingerprint") if isinstance(current_user, dict) else current_user.id
     user_role = current_user.get("role") if isinstance(current_user, dict) else getattr(current_user, "role", "user")
 
     if user_role == "guest":

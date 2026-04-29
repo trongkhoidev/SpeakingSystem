@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# LexiLearn Startup Script
+# SpeakingSystem Startup Script
 # This script starts Frontend (Vite) and Backend (FastAPI)
 
-echo "🚀 Starting LexiLearn Development Environment..."
+echo "🚀 Starting SpeakingSystem Development Environment..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -124,7 +124,7 @@ else
 fi
 
 echo ""
-echo -e "${GREEN}🎉 LexiLearn is now running!${NC}"
+echo -e "${GREEN}🎉 SpeakingSystem is now running!${NC}"
 echo -e "${BLUE}📱 Frontend: http://localhost:5173${NC}"
 echo -e "${BLUE}🔧 Backend: http://localhost:8000${NC}"
 echo -e "${BLUE}📚 API Docs: http://localhost:8000/docs${NC}"

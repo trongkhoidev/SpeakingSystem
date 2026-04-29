@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# LexiLearn Quick Setup Script
+# SpeakingSystem Quick Setup Script
 
-echo "🎓 LexiLearn Setup Script"
+echo "🎓 SpeakingSystem Setup Script"
 echo "========================="
 echo ""
 
@@ -55,16 +55,13 @@ echo "   - AZURE_SPEECH_KEY"
 echo "   - GEMINI_API_KEY (or OPENAI_API_KEY)"
 echo "   - SUPABASE_URL and SUPABASE_KEY"
 echo ""
-echo "2. Run the backend:"
+echo "2. Initialize the database:"
 echo "   cd backend"
 echo "   source venv/bin/activate"
-echo "   python -m uvicorn main:app --reload"
+echo "   python init_db.py"
+echo "   python seed_questions.py"
 echo ""
-echo "3. Run the frontend (new terminal):"
-echo "   cd frontend"
-echo "   npm run dev"
-echo ""
-echo "4. Setup database (in Supabase SQL editor):"
-echo "   Execute migrations from supabase/migrations/ in order"
+echo "3. Run the development environment:"
+echo "   ./start.sh"
 echo ""
 echo "Visit http://localhost:5173 to start!"

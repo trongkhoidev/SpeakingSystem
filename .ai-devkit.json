@@ -1,5 +1,5 @@
 {
-  "version": "0.20.1",
+  "version": "0.27.0",
   "environments": [
     "antigravity"
   ],
@@ -12,6 +12,40 @@
     "deployment",
     "monitoring"
   ],
-  "createdAt": "2026-04-03T00:27:55.667Z",
-  "updatedAt": "2026-04-03T00:27:55.686Z"
+  "createdAt": "2026-04-29T12:18:53.882Z",
+  "updatedAt": "2026-04-29T12:19:04.250Z",
+  "skills": [
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "dev-lifecycle"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "debug"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "capture-knowledge"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "memory"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "simplify-implementation"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "technical-writer"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "verify"
+    },
+    {
+      "registry": "codeaholicguy/ai-devkit",
+      "name": "tdd"
+    }
+  ]
 }

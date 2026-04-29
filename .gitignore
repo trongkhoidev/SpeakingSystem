@@ -2,8 +2,6 @@
 .env
 *.env
 .env.*
-docs/ai
-.agent
 
 # Python
 __pycache__/
@@ -41,7 +39,34 @@ Thumbs.db
 # Logs
 logs/
 *.log
+seed_log.txt
+tsc_out.txt
 
 # Project specific
 .backend.pid
 .frontend.pid
+.supabase.pid
+*.docx
+scratch/
+backend/scratch/
+sample-speaking-mode/
+
+# Agent & Internal Docs
+.agent/
+.cursor/
+.ai-devkit.json
+docs/ai/
+AGENTS.md
+progress_report.md
+FIXES_APPLIED.md
+ARCHITECTURE.md
+AI_SPEAKING_SYSTEM_FLOW.md
+GETTING_STARTED.md
+MANUAL_SETUP.md
+QUICK_START.md
+SPEAKING_MODE_ARCHITECTURE.md
+SPEAKING_MODE_MANIFEST.md
+speaking.md
+tech.md
+
+

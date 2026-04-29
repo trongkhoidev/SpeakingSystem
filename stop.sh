@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ###############################################################################
-# 🛑 LexiLearn Stop Script
+# 🛑 SpeakingSystem Stop Script
 # 
-# Stop all LexiLearn services
+# Stop all SpeakingSystem services
 # Usage: ./stop.sh
 #
 ###############################################################################
@@ -17,7 +17,7 @@ NC='\033[0m'
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-echo -e "${BLUE}🛑 Stopping LexiLearn services...${NC}\n"
+echo -e "${BLUE}🛑 Stopping SpeakingSystem services...${NC}\n"
 
 # Stop Backend
 if [ -f ".backend.pid" ]; then
@@ -47,5 +47,5 @@ else
     pkill -f "vite" 2>/dev/null && echo -e "${GREEN}✓ Frontend process killed${NC}" || true
 fi
 
-echo -e "${GREEN}\n✓ All LexiLearn services stopped${NC}"
+echo -e "${GREEN}\n✓ All SpeakingSystem services stopped${NC}"
 echo -e "${YELLOW}Note: Check logs/ directory if services don't respond${NC}"

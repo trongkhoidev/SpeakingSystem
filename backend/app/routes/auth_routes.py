@@ -1,6 +1,6 @@
 """Authentication routes for Google OAuth login and user session management."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 from authlib.jose import jwt
@@ -14,6 +14,7 @@ from app.models.sqlalchemy_models import User
 from app.models.schemas import GoogleLoginRequest, Token, User as UserSchema
 from app.utils.security import create_access_token, decode_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.services.trial_service import TrialService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -51,29 +52,15 @@ async def get_current_user(
         )
         
     if role == "guest":
-        # Ensure guest exists in DB to satisfy FK constraints
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user:
-                user = User(
-                    id=user_id,
-                    email=f"{user_id}@lexilearn.guest",
-                    full_name="Guest User",
-                    role="guest"
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-            return user
-        except Exception as e:
-            logger.error(f"Failed to fetch/create guest user: {e}")
-            # Fallback to dict for backward compatibility or DB failure
-            return {
-                "id": user_id,
-                "role": "guest",
-                "email": f"{user_id}@lexilearn.guest",
-                "full_name": "Guest User"
-            }
+        # Guest users are no longer stored in the User table.
+        # We return a dict-like object that the endpoints can handle.
+        return {
+            "id": user_id,
+            "role": "guest",
+            "email": f"{user_id}@lexilearn.guest",
+            "full_name": "Guest User",
+            "fingerprint": payload.get("fingerprint", "")
+        }
         
     try:
         user = db.query(User).filter(User.id == user_id).first()
@@ -98,6 +85,7 @@ async def get_current_user(
 @router.post("/google", response_model=Token)
 async def google_login(
     login_data: GoogleLoginRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """Authenticate with Google ID Token."""
@@ -181,6 +169,18 @@ async def google_login(
                 
             db.commit()
             db.refresh(user)
+
+            # Track Conversion: Link device fingerprint to this real user
+            fingerprint = request.headers.get("X-Device-Fingerprint")
+            if fingerprint:
+                try:
+                    from app.models.sqlalchemy_models import GuestTrial
+                    trial = db.query(GuestTrial).filter(GuestTrial.guest_id == fingerprint).first()
+                    if trial and not trial.converted_user_id:
+                        trial.converted_user_id = user.id
+                        db.commit()
+                except Exception as conv_err:
+                    logger.error(f"Failed to track conversion: {conv_err}")
         except Exception as db_err:
             logger.error(f"Database error during login: {str(db_err)}")
             if "not allowed to access the server" in str(db_err).lower():
@@ -218,33 +218,38 @@ async def google_login(
 
 
 @router.post("/guest", response_model=Token)
-async def guest_login(db: Session = Depends(get_db)):
-    """Issue a trial token for a guest user and persist it to satisfy FK constraints."""
-    import uuid
-    guest_id = f"guest-{uuid.uuid4()}"
-    guest_email = f"{guest_id}@lexilearn.guest"
-    
-    # Persist guest to DB so FK constraints on practice_sessions etc. work
-    try:
-        guest_user = User(
-            id=guest_id,
-            email=guest_email,
-            full_name="Guest User",
-            role="guest"
+async def guest_login(request: Request, db: Session = Depends(get_db)):
+    """Issue a trial token for a guest user using device fingerprint."""
+    fingerprint = request.headers.get("X-Device-Fingerprint")
+    if not fingerprint:
+        raise HTTPException(
+            status_code=400,
+            detail="Device fingerprint is required for guest trial."
         )
-        db.add(guest_user)
-        db.commit()
-        db.refresh(guest_user)
-    except Exception as e:
-        logger.error(f"Failed to persist guest user: {e}")
-        # Fallback: if DB fails, still try to return a token, 
-        # though downstream DB writes will fail.
-        pass
+
+    # Check if trial exists and has remaining quota
+    from app.services.trial_service import TrialService
+    trial = TrialService.get_or_create_trial(
+        db, 
+        fingerprint, 
+        user_agent=request.headers.get("User-Agent"),
+        ip=request.client.host if request.client else None
+    )
+    
+    if TrialService._remaining_points(trial) <= 0:
+        raise HTTPException(
+            status_code=403,
+            detail="Guest trial quota reached on this device. Please sign in with Google to continue."
+        )
+
+    guest_id = f"guest-{fingerprint[:16]}"
+    guest_email = f"{guest_id}@lexilearn.guest"
 
     access_token = create_access_token(data={
         "sub": guest_id,
         "email": guest_email,
-        "role": "guest"
+        "role": "guest",
+        "fingerprint": fingerprint
     })
     
     return {

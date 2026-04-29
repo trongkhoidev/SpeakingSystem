@@ -1,7 +1,7 @@
 """Test session management service."""
 
 from sqlalchemy.orm import Session
-from app.models.sqlalchemy_models import TestSession, TestAnswer, Question, ExamSet
+from app.models.sqlalchemy_models import TestSession, TestAnswer, Question, ExamSet, Topic
 from app.models.schemas import TestSessionCreate
 import uuid
 import json
@@ -57,11 +57,37 @@ class TestService:
         question_count = config.question_count or 5
         parts = config.parts_included
         
-        # If no specific parts, do full test (balanced 4-1-4)
+        # If no specific parts, do full test (Smart Random: Cluster P1 + P2 + Linked/Topic P3)
         if not parts:
-            p1 = db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(4).all()
+            # 1. Pick 1 random Part 1 Topic cluster
+            p1_topic = db.query(Topic).filter(Topic.part == 1).order_by(func.random()).first()
+            if p1_topic:
+                p1 = db.query(Question).filter(Question.topic_id == p1_topic.id).all()
+            else:
+                p1 = db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(4).all()
+
+            # 2. Pick 1 random Part 2 cue card
             p2 = db.query(Question).filter(Question.part == 2).order_by(func.random()).limit(1).all()
-            p3 = db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(4).all()
+            
+            p3 = []
+            if p2:
+                # 3. Smart Fallback for Part 3
+                # Attempt 1: Explicitly linked
+                p3 = db.query(Question).filter(Question.part == 3, Question.linked_part2_id == p2[0].id).all()
+                
+                # Attempt 2: Topic match fallback
+                if len(p3) < 2:
+                    p2_topic = p2[0].topic
+                    if p2_topic:
+                        # Try to find a Part 3 Topic with a similar name
+                        p3_topic = db.query(Topic).filter(Topic.part == 3, Topic.name == p2_topic.name).first()
+                        if p3_topic:
+                            p3 = db.query(Question).filter(Question.topic_id == p3_topic.id).all()
+            
+            # Final Fallback: Pure random Part 3
+            if len(p3) < 2:
+                p3 = db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(4).all()
+                
             return p1 + p2 + p3
         
         # Single part
@@ -110,7 +136,19 @@ class TestService:
                 "question": answer.question.question_text if answer.question else "N/A",
                 "part": answer.part_number or (answer.question.part if answer.question else None),
                 "overall_band": float(answer.overall_band) if answer.overall_band else None,
-                "feedback": parsed_feedback
+                "fc_band": float(answer.fc_band) if answer.fc_band else None,
+                "lr_band": float(answer.lr_band) if answer.lr_band else None,
+                "gra_band": float(answer.gra_band) if answer.gra_band else None,
+                "pron_band": float(answer.pronunciation_band) if answer.pronunciation_band else None,
+                "student_transcript": answer.student_transcript,
+                "audio_url": answer.audio_blob_url,
+                "word_details": _json.loads(answer.word_details) if answer.word_details else None,
+                "azure_pronunciation": {
+                    "accuracy_score": float(answer.accuracy_score) if answer.accuracy_score else None,
+                    "fluency_score": float(answer.fluency_score) if answer.fluency_score else None,
+                    "prosody_score": float(answer.prosody_score) if answer.prosody_score else None,
+                },
+                "feedback_json": parsed_feedback
             })
 
         # Derive a meaningful test type label from session config

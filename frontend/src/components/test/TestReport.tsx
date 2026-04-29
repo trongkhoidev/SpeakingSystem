@@ -4,30 +4,30 @@ import {
   ChevronDown, 
   ChevronUp, 
   Download, 
-  FileText, 
-  MessageCircle, 
   Share2,
   TrendingUp,
-  Zap,
-  Play
+  Play,
+  History,
+  Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
-import { BandBadge } from '../shared/BandBadge';
-import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
+import { TestFeedbackPanel } from './TestFeedbackPanel';
 
 interface QuestionResult {
   id: string;
   question: string;
   part: number;
   overall_band: number;
-  scores: {
-    fc: number;
-    lr: number;
-    gra: number;
-    pron: number;
-  };
-  feedback: string;
+  fc_band: number;
+  lr_band: number;
+  gra_band: number;
+  pron_band: number;
+  student_transcript: string;
+  audio_url: string | null;
+  word_details: any;
+  azure_pronunciation: any;
+  feedback_json: any;
 }
 
 interface TestReportProps {
@@ -41,10 +41,10 @@ export function TestReport({ date, overallBand, type, results }: TestReportProps
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const stats = [
-    { label: 'Fluency', score: 7.5, color: 'text-[#4361EE]' },
-    { label: 'Lexical', score: 7.0, color: 'text-[#7C3AED]' },
-    { label: 'Grammar', score: 8.0, color: 'text-[#F59E0B]' },
-    { label: 'Pronunciation', score: 7.5, color: 'text-[#1A8F5C]' },
+    { label: 'Fluency', score: results?.length ? (results.reduce((acc, r) => acc + (r.fc_band || 0), 0) / results.length).toFixed(1) : '0.0', color: 'text-[#4361EE]' },
+    { label: 'Lexical', score: results?.length ? (results.reduce((acc, r) => acc + (r.lr_band || 0), 0) / results.length).toFixed(1) : '0.0', color: 'text-[#7C3AED]' },
+    { label: 'Grammar', score: results?.length ? (results.reduce((acc, r) => acc + (r.gra_band || 0), 0) / results.length).toFixed(1) : '0.0', color: 'text-[#F59E0B]' },
+    { label: 'Pronunciation', score: results?.length ? (results.reduce((acc, r) => acc + (r.pron_band || 0), 0) / results.length).toFixed(1) : '0.0', color: 'text-[#1A8F5C]' },
   ];
 
   return (
@@ -56,8 +56,8 @@ export function TestReport({ date, overallBand, type, results }: TestReportProps
          </div>
 
          <div className="flex flex-col items-center gap-4 relative z-10">
-            <div className="w-32 h-32 bg-[#EEF0FD] rounded-full flex items-center justify-center">
-               <div className="text-5xl font-bold text-[#4361EE]">{overallBand}</div>
+            <div className="w-32 h-32 bg-[#EEF0FD] rounded-full flex items-center justify-center border-4 border-white shadow-inner">
+               <div className="text-5xl font-bold text-[#4361EE]">{(overallBand || 0).toFixed(1)}</div>
             </div>
             <div className="px-4 py-1.5 bg-[#EEF0FD] rounded-full text-[#4361EE] font-bold uppercase tracking-wider text-[10px]">
                Overall Band Estimate
@@ -100,96 +100,67 @@ export function TestReport({ date, overallBand, type, results }: TestReportProps
 
       {/* Per-Question Details */}
       <section className="space-y-4">
-         <p className="section-title mb-2">Phân tích chi tiết từng câu hỏi</p>
+         <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-6">Phân tích chi tiết từng câu hỏi</p>
 
-         <div className="space-y-3">
-            {results.map((r, index) => (
+         <div className="space-y-4">
+            {results?.map((r, index) => (
                <div 
                   key={r.id}
                   className={cn(
-                     "card p-0 overflow-hidden transition-all duration-300",
-                     expandedId === r.id ? "ring-2 ring-[#4361EE]/10" : "hover:border-[#4361EE]/30"
+                     "card p-0 overflow-hidden transition-all duration-300 bg-white border border-slate-100",
+                     expandedId === r.id ? "ring-2 ring-blue-600/10 shadow-lg" : "hover:border-blue-600/30"
                   )}
                >
                   <button 
                      onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
-                     className="w-full px-6 py-5 flex items-center gap-6"
+                     className="w-full px-8 py-6 flex items-center gap-6"
                   >
-                     <div className="w-9 h-9 rounded-lg bg-[#F0F2F5] flex items-center justify-center font-bold text-[#6B7280] text-sm shrink-0">
+                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-400 text-sm shrink-0 border border-slate-100">
                         {index + 1}
                      </div>
                      
                      <div className="flex-grow text-left">
-                        <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF] font-bold uppercase tracking-wider mb-1">
+                        <div className="flex items-center gap-2 text-[10px] text-blue-600 font-bold uppercase tracking-widest mb-1">
                            Part {r.part}
                         </div>
-                        <h4 className="text-[15px] font-bold text-[#1A1D2B] leading-tight group">
+                        <h4 className="text-[16px] font-bold text-slate-900 leading-tight">
                            {r.question}
                         </h4>
                      </div>
 
-                     <div className="flex items-center gap-8 pr-2">
-                        <div className="hidden sm:flex items-center gap-5 text-[11px] font-bold text-[#9CA3AF] uppercase">
-                           <div className="flex flex-col items-center">
+                     <div className="flex items-center gap-10 pr-2">
+                        <div className="hidden md:flex items-center gap-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                           <div className="flex flex-col items-center gap-1">
                               <span>FC</span>
-                              <span className="text-[#1A1D2B]">{r.scores.fc}</span>
+                              <span className="text-slate-900">{r.fc_band?.toFixed(1) || '0.0'}</span>
                            </div>
-                           <div className="flex flex-col items-center">
+                           <div className="flex flex-col items-center gap-1">
                               <span>LR</span>
-                              <span className="text-[#1A1D2B]">{r.scores.lr}</span>
+                              <span className="text-slate-900">{r.lr_band?.toFixed(1) || '0.0'}</span>
                            </div>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-[#EEF0FD] flex items-center justify-center text-[#4361EE] font-bold">
-                           {r.overall_band}
+                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-black text-lg border border-blue-100">
+                           {r.overall_band?.toFixed(1) || '0.0'}
                         </div>
-                        {expandedId === r.id ? <ChevronUp className="w-5 h-5 text-[#9CA3AF]" /> : <ChevronDown className="w-5 h-5 text-[#9CA3AF]" />}
+                        <div className={cn("w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center transition-transform", expandedId === r.id && "rotate-180")}>
+                           <ChevronDown className="w-4 h-4 text-slate-400" />
+                        </div>
                      </div>
                   </button>
 
                   <div className={cn(
-                    "px-8 pb-8 transition-all duration-500 origin-top overflow-hidden",
-                    expandedId === r.id ? "max-h-[1000px] opacity-100 py-4" : "max-h-0 opacity-0 py-0"
+                    "px-8 transition-all duration-500 origin-top overflow-hidden",
+                    expandedId === r.id ? "max-h-[2000px] opacity-100 pb-10" : "max-h-0 opacity-0"
                   )}>
-                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4 border-t border-[#F0F2F5]">
-                        <div className="lg:col-span-2 space-y-6">
-                           <div className="space-y-3">
-                              <label className="text-[11px] font-bold uppercase tracking-widest text-[#4361EE] flex items-center gap-2">
-                                 <MessageCircle className="w-4 h-4" /> Phản hồi từ AI
-                              </label>
-                              <div className="p-6 bg-[#F8F9FB] rounded-2xl border border-[#E8ECF1] text-[#1A1D2B] text-[14px] leading-relaxed whitespace-pre-wrap">
-                                 {r.feedback}
-                              </div>
-                           </div>
-
-                           <div className="flex gap-3">
-                              <button className="btn btn-ghost px-6 py-2.5 text-xs">
-                                 <Play className="w-3.5 h-3.5" /> Nghe lại
-                              </button>
-                              <button className="btn btn-ghost px-6 py-2.5 text-xs">
-                                 <FileText className="w-3.5 h-3.5" /> Xem Transcript
-                              </button>
-                           </div>
-                        </div>
-
-                        <div className="space-y-5">
-                            <div className="p-6 bg-[#EEF0FD]/50 rounded-2xl border border-[#4361EE]/10 space-y-4">
-                               <h5 className="text-[11px] font-bold uppercase tracking-widest text-[#1A1D2B]">Điểm nổi bật</h5>
-                               <ul className="space-y-3">
-                                  <li className="flex items-start gap-2.5 text-[12.5px] text-[#6B7280]">
-                                     <div className="w-1.5 h-1.5 rounded-full bg-[#4361EE] mt-1.5 flex-shrink-0" />
-                                     Sử dụng collocation phù hợp với chủ đề.
-                                  </li>
-                                  <li className="flex items-start gap-2.5 text-[12.5px] text-[#6B7280]">
-                                     <div className="w-1.5 h-1.5 rounded-full bg-[#4361EE] mt-1.5 flex-shrink-0" />
-                                     Cần cải thiện ngữ điệu ở các câu phức.
-                                  </li>
-                               </ul>
-                            </div>
-                            
-                            <button className="btn btn-ghost w-full text-xs py-3">
-                                <TrendingUp className="w-4 h-4 text-[#4361EE]" /> So sánh kết quả
-                            </button>
-                        </div>
+                     <div className="pt-8 border-t border-slate-100">
+                        <TestFeedbackPanel 
+                          feedback={{
+                            ...r,
+                            color_coded_transcript: r.word_details
+                          }} 
+                          questionText={r.question}
+                          audioUrl={r.audio_url}
+                        />
                      </div>
                   </div>
                </div>

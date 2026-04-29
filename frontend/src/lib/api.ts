@@ -33,7 +33,7 @@ api.interceptors.response.use(
 
     if (status === 402) {
       if (typeof window !== 'undefined') {
-        toast.error(detail || 'Bạn đã hết token. Vui lòng nâng cấp gói hoặc nhận token thưởng hằng ngày.');
+        toast.error(detail || 'Bạn đã hết 💎. Vui lòng nâng cấp gói hoặc nhận 💎 thưởng hằng ngày.');
         // Trigger a global custom event so components can show a nice modal
         window.dispatchEvent(new CustomEvent('insufficient-tokens'));
       }

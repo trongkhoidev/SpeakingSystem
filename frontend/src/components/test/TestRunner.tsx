@@ -23,13 +23,15 @@ import api from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLoginButton } from '../auth/GoogleLoginButton';
+import { ProfessionalModals } from '../shared/ProfessionalModals';
 
 type TestState = 
   | 'IDLE' 
   | 'EXAMINER_SPEAKING' 
   | 'USER_SPEAKING' 
   | 'PART2_PREP' 
-  | 'BETWEEN_QUESTIONS' 
+  | 'NEXT_TRANSITION'
+  | 'ANALYZING'
   | 'COMPLETED';
 
 interface Question {
@@ -67,31 +69,8 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   } = useTranscription();
   
   const navigate = useNavigate();
-  const currentQuestion = questions[currentQuestionIndex];
-  const timerRef = useRef<any>(null);
-  const [isLimitReached, setIsLimitReached] = useState(false);
-  const [isTokenRequired, setIsTokenRequired] = useState(false);
+  const [pendingAssessments, setPendingAssessments] = useState(0);
 
-  useEffect(() => {
-    const handleTrialLimit = () => {
-      window.speechSynthesis.cancel();
-      if (timerRef.current) clearInterval(timerRef.current);
-      setIsLimitReached(true);
-    };
-    const handleTokenRequired = () => {
-      window.speechSynthesis.cancel();
-      if (timerRef.current) clearInterval(timerRef.current);
-      setIsTokenRequired(true);
-    };
-
-    window.addEventListener('trial-limit-reached', handleTrialLimit);
-    window.addEventListener('insufficient-tokens', handleTokenRequired);
-
-    return () => {
-      window.removeEventListener('trial-limit-reached', handleTrialLimit);
-      window.removeEventListener('insufficient-tokens', handleTokenRequired);
-    };
-  }, []);
 
   // Simulation: Examiner Voice (TTS)
   const speakQuestion = useCallback((text: string) => {
@@ -172,36 +151,54 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
       setTestState('IDLE');
       resetTranscript();
     } else {
-      setTestState('COMPLETED');
-      api.post(`/test/${sessionId}/complete`).then(() => {
-        onComplete();
-      });
+      // Last question completed
+      setTestState('ANALYZING');
     }
   };
+
+  // Wait for all background assessments to finish before completing
+  useEffect(() => {
+    if (testState === 'ANALYZING' && pendingAssessments === 0) {
+      const finalizeTest = async () => {
+        try {
+          await api.post(`/test/${sessionId}/complete`);
+          onComplete();
+        } catch (error) {
+          console.error("Failed to complete test:", error);
+          // Still move to complete to show report
+          onComplete();
+        }
+      };
+      finalizeTest();
+    }
+  }, [testState, pendingAssessments, sessionId, onComplete]);
 
   const handleRecordingComplete = async (blob: Blob) => {
     if (timerRef.current) clearInterval(timerRef.current);
     stopTranscribing();
-    setTestState('BETWEEN_QUESTIONS');
     
-    // Auto-advance after 3 seconds in mock test
-    setTimeout(() => {
-      nextQuestion();
-    }, 3000);
-    
+    // Background Task: Submit answer for AI assessment
     const formData = new FormData();
     formData.append('audio_file', blob, 'answer.wav');
     formData.append('question_id', currentQuestion.id);
     formData.append('question_text', currentQuestion.question_text);
     
-    try {
-      await api.post(`/test/${sessionId}/answer`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setAnswers([...answers, { questionId: currentQuestion.id, status: 'submitted' }]);
-    } catch (error) {
-      console.error("Failed to submit answer:", error);
-    }
+    setPendingAssessments(prev => prev + 1);
+    
+    // Fire and forget (let it run in background)
+    api.post(`/test/${sessionId}/answer`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).finally(() => {
+      setPendingAssessments(prev => prev - 1);
+    });
+
+    // Zero-Interruption: Move to next state IMMEDIATELY
+    setTestState('NEXT_TRANSITION');
+    
+    // Small delay for UI smoothness before next examiner prompt
+    setTimeout(() => {
+      nextQuestion();
+    }, 1500);
   };
 
   useEffect(() => {
@@ -339,26 +336,55 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
           </div>
         )}
 
-        {testState === 'BETWEEN_QUESTIONS' && (
+        {testState === 'NEXT_TRANSITION' && (
           <div className="space-y-10 text-center animate-scale-in">
-            <div className="w-20 h-20 bg-[#E6F9F0] rounded-3xl flex items-center justify-center mx-auto mb-6 text-[#1A8F5C]">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-blue-600">
+              <Sparkles className="w-10 h-10 animate-pulse" />
             </div>
             <div className="space-y-3">
-              <h2 className="text-2xl font-bold text-[#1A1D2B] font-heading">Hoàn thành câu hỏi {currentQuestionIndex + 1}!</h2>
-              <p className="text-[14px] text-[#6B7280] max-w-sm mx-auto">
-                Câu trả lời đã được lưu. Hãy sẵn sàng cho thử thách tiếp theo.
+              <h2 className="text-2xl font-bold text-[#1A1D2B] font-heading tracking-tight">Câu trả lời đã được ghi nhận</h2>
+              <p className="text-[14px] text-[#6B7280] max-w-sm mx-auto font-medium">
+                Đang chuyển sang thử thách tiếp theo...
               </p>
             </div>
-            <div className="flex gap-4 justify-center opacity-50 pointer-events-none">
-              <button className="btn btn-ghost px-8">
-                <ListRestart className="w-4 h-4" />
-                Luyện lại câu này
-              </button>
-              <button className="btn btn-primary px-10 gap-2">
-                Đang chuyển câu...
-                <ArrowRight className="w-5 h-5" />
-              </button>
+          </div>
+        )}
+
+        {testState === 'ANALYZING' && (
+          <div className="space-y-10 text-center animate-scale-in">
+             <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-xl relative">
+              <Sparkles className="w-12 h-12 text-blue-600 animate-spin-slow" />
+              <div className="absolute inset-0 border-4 border-blue-200 border-t-blue-600 rounded-[2.5rem] animate-spin" />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-[32px] font-black text-[#1A1D2B] font-heading tracking-tight">Đang phân tích bài thi...</h2>
+              <p className="text-[16px] text-[#6B7280] max-w-md mx-auto font-medium leading-relaxed">
+                Hệ thống AI đang tổng hợp và đánh giá chuyên sâu toàn bộ các câu trả lời của bạn. Vui lòng đợi trong giây lát.
+              </p>
+            </div>
+            <div className="pt-8 flex flex-col items-center gap-6">
+               <div className="w-full max-w-xs h-2 bg-[#E8ECF1] rounded-full overflow-hidden">
+                 <motion.div 
+                    className="h-full bg-blue-600"
+                    animate={{ width: ['0%', '100%'] }}
+                    transition={{ duration: 10, repeat: Infinity }}
+                 />
+               </div>
+               <div className="flex items-center gap-3">
+                 <div className="flex gap-1">
+                   {[1, 2, 3].map(i => (
+                     <motion.div 
+                        key={i}
+                        className="w-1.5 h-1.5 bg-blue-600 rounded-full"
+                        animate={{ opacity: [0.3, 1, 0.3] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                     />
+                   ))}
+                 </div>
+                 <p className="text-[11px] text-[#9CA3AF] font-black uppercase tracking-[0.2em]">
+                   Pending Analysis: {pendingAssessments} tasks
+                 </p>
+               </div>
             </div>
           </div>
         )}
@@ -395,91 +421,7 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
         </button>
       </div>
 
-      <AnimatePresence>
-        {/* MODAL: HẾT LƯỢT DÙNG THỬ (GUEST) */}
-        {isLimitReached && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl text-center space-y-8 relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 to-orange-500" />
-              
-              <div className="w-24 h-24 bg-amber-50 rounded-3xl flex items-center justify-center mx-auto text-amber-600 rotate-3 shadow-inner">
-                <Zap className="w-12 h-12 fill-current animate-pulse" />
-              </div>
-
-              <div className="space-y-3">
-                <h2 className="text-[32px] font-black text-slate-900 tracking-tight leading-tight">Hết lượt dùng thử!</h2>
-                <p className="text-[15px] text-slate-500 font-medium leading-relaxed">
-                  Bạn đã khám phá hết các tính năng dành cho khách. Hãy đăng nhập để tiếp tục luyện tập, lưu lịch sử bài nói và nhận thêm token miễn phí mỗi ngày nhé!
-                </p>
-              </div>
-
-              <div className="space-y-4 pt-4">
-                <GoogleLoginButton />
-                <button
-                  onClick={() => setIsLimitReached(false)}
-                  className="w-full py-4 text-slate-400 text-[13px] font-bold hover:text-slate-600 transition-colors uppercase tracking-widest"
-                >
-                  Để sau
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* MODAL: HẾT TOKEN (REGISTERED USER) */}
-        {isTokenRequired && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl text-center space-y-8 relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
-
-              <div className="w-24 h-24 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto text-blue-600 -rotate-3 shadow-inner">
-                <Sparkles className="w-12 h-12 fill-current" />
-              </div>
-
-              <div className="space-y-3">
-                <h2 className="text-[32px] font-black text-slate-900 tracking-tight leading-tight">Hết Token luyện tập!</h2>
-                <p className="text-[15px] text-slate-500 font-medium leading-relaxed">
-                  Hệ thống cần token để thực hiện đánh giá AI chuyên sâu. Bạn có thể nâng cấp gói hội viên hoặc đợi nhận token miễn phí vào ngày mai.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 pt-4">
-                <button
-                  onClick={() => navigate('/plans')}
-                  className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[14px] uppercase tracking-widest shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3"
-                >
-                  <BarChart3 className="w-5 h-5" />
-                  Nâng cấp gói ngay
-                </button>
-                <button
-                  onClick={() => setIsTokenRequired(false)}
-                  className="w-full py-4 text-slate-400 text-[13px] font-bold hover:text-slate-600 transition-colors uppercase tracking-widest"
-                >
-                  Đóng
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ProfessionalModals />
     </div>
   );
 }
