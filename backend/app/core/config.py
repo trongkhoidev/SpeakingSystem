@@ -76,7 +76,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list = [
         "http://localhost:3000",
         "http://localhost:5173",
-        os.getenv("FRONTEND_URL", "http://localhost:5173"),
+        "http://localhost:8080",
+        os.getenv("FRONTEND_URL", "*"),
     ]
 
 
