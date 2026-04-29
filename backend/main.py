@@ -21,56 +21,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Manage app startup and shutdown."""
     
+    # Log ngay lập tức để Railway biết app đang chạy
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting...")
     logger.info(f"🌐 Environment: {'Debug' if settings.DEBUG else 'Production'}")
-    
-    # ── Khởi tạo database tables ──
-    try:
-        from app.core.database import engine, Base
-        from app.models import sqlalchemy_models
-        logger.info("📡 Connecting to database...")
-        # Thử tạo tables với timeout ngắn để tránh treo Healthcheck
-        Base.metadata.create_all(bind=engine)
-        logger.info("✅ Database tables ready")
-    except Exception as e:
-        logger.error(f"❌ Database initialization failed: {e}")
-        logger.warning("⚠️ Application will continue but database features may fail.")
-    
-    # Startup: Validate external service connections
-    logger.info("Validating external service connections...")
-    
-    if not settings.DEEPGRAM_API_KEY:
-        logger.warning("⚠️  Deepgram API key not configured")
-    else:
-        logger.info("✓ Deepgram configured")
-    
-    if not settings.AZURE_SPEECH_KEY:
-        logger.warning("⚠️  Azure Speech key not configured")
-    else:
-        logger.info("✓ Azure Speech configured")
-    
-    if settings.LLM_PROVIDER == "gemini":
-        if not settings.GEMINI_API_KEY:
-            logger.warning("⚠️  Gemini API key not configured")
-        else:
-            logger.info("✓ Gemini configured")
-    elif settings.LLM_PROVIDER == "deepseek":
-        if not settings.DEEPSEEK_API_KEY:
-            logger.warning("⚠️  DeepSeek API key not configured")
-        else:
-            logger.info("✓ DeepSeek configured")
-    else:
-        if not settings.OPENAI_API_KEY:
-            logger.warning("⚠️  OpenAI API key not configured")
-        else:
-            logger.info("✓ OpenAI configured")
-    
-    if not settings.AZURE_STORAGE_CONNECTION_STRING:
-        logger.warning("⚠️  Azure Blob Storage not configured")
-    else:
-        logger.info("✓ Azure Blob Storage configured")
-    
-    logger.info("Services initialized")
+    logger.info("✅ App ready — database will connect on first request")
     
     yield
     
