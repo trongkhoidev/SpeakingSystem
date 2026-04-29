@@ -22,15 +22,19 @@ async def lifespan(app: FastAPI):
     """Manage app startup and shutdown."""
     
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting...")
+    logger.info(f"🌐 Environment: {'Debug' if settings.DEBUG else 'Production'}")
     
-    # ── Khởi tạo database tables (tự động cho SQLite fallback) ──
+    # ── Khởi tạo database tables ──
     try:
         from app.core.database import engine, Base
-        from app.models import sqlalchemy_models  # noqa: F401 — đảm bảo models được import
+        from app.models import sqlalchemy_models
+        logger.info("📡 Connecting to database...")
+        # Thử tạo tables với timeout ngắn để tránh treo Healthcheck
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables ready")
     except Exception as e:
-        logger.warning(f"⚠️  DB table creation skipped: {e}")
+        logger.error(f"❌ Database initialization failed: {e}")
+        logger.warning("⚠️ Application will continue but database features may fail.")
     
     # Startup: Validate external service connections
     logger.info("Validating external service connections...")

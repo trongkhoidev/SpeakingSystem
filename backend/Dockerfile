@@ -2,8 +2,8 @@
 FROM python:3.11-slim-bookworm
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies including ODBC driver for SQL Server
@@ -32,5 +32,5 @@ COPY . .
 # Expose port (Railway will override this)
 EXPOSE 8000
 
-# Command to run the application using dynamic PORT
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Command to run the application using dynamic PORT provided by Railway
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
