@@ -67,6 +67,21 @@ export function FeedbackPanel({ result, onNext }: FeedbackPanelProps) {
         </div>
       </div>
 
+      {result.is_relevant === false && (
+        <div className="p-8 rounded-[2rem] bg-amber-50 border border-amber-200 flex flex-col md:flex-row items-center gap-6 animate-in zoom-in duration-500">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <div className="space-y-1 text-center md:text-left">
+            <h4 className="text-amber-900 font-bold text-lg">Câu trả lời có vẻ không liên quan</h4>
+            <p className="text-amber-800/70 text-sm font-medium">
+              Hệ thống nhận thấy câu trả lời của bạn có thể lạc đề (Relevance Score: {result.relevance_score}%). 
+              Kết quả chấm điểm bên dưới có thể không chính xác hoàn toàn.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Metrics & Analysis */}

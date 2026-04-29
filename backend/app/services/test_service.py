@@ -57,11 +57,11 @@ class TestService:
         question_count = config.question_count or 5
         parts = config.parts_included
         
-        # If no specific parts, do full test
+        # If no specific parts, do full test (balanced 4-1-4)
         if not parts:
-            p1 = db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(question_count).all()
+            p1 = db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(4).all()
             p2 = db.query(Question).filter(Question.part == 2).order_by(func.random()).limit(1).all()
-            p3 = db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(question_count).all()
+            p3 = db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(4).all()
             return p1 + p2 + p3
         
         # Single part

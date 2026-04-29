@@ -32,10 +32,12 @@ class Settings(BaseSettings):
     AZURE_SPEECH_KEY: str = os.getenv("AZURE_SPEECH_KEY", "")
     AZURE_SPEECH_REGION: str = os.getenv("AZURE_SPEECH_REGION", "eastasia")
     
-    # LLM (Gemini or GPT)
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")  # gemini or openai
+    # LLM (Gemini, GPT, or DeepSeek)
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")  # gemini, openai, or deepseek
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
+    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY")
     
     # Azure SQL
     DB_SERVER: str = os.getenv("DB_SERVER", "")

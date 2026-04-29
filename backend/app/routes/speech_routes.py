@@ -73,11 +73,14 @@ async def assess_speech(
             plan = TokenService.get_effective_plan(db, wallet.plan_code)
             TokenService.consume_tokens(db, current_user, int(plan["practice_cost"]))
 
-        # Create a PracticeSession so answers are linked for heatmap/streak queries
-        practice_session = PracticeSession(user_id=user_id if user_role != "guest" else None)
-        db.add(practice_session)
-        db.commit()
-        db.refresh(practice_session)
+        # Create a PracticeSession only for registered users
+        session_id = None
+        if user_role != "guest":
+            practice_session = PracticeSession(user_id=user_id)
+            db.add(practice_session)
+            db.commit()
+            db.refresh(practice_session)
+            session_id = str(practice_session.id)
 
         result = await assessment_service.run_assessment_pipeline(
             audio_data=raw_audio,
@@ -85,8 +88,9 @@ async def assess_speech(
             question_text=question_text,
             user_id=user_id,
             question_id=question_id,
-            session_id=str(practice_session.id),
-            db=db
+            session_id=session_id,
+            custom_question_id=custom_question_id,
+            db=db if user_role != "guest" else None
         )
         if user_role == "guest":
             TrialService.increment_practice(db, user_id)

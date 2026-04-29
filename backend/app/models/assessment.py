@@ -79,6 +79,10 @@ class IELTSAssessmentResult(BaseModel):
     band_scores: BandScores
     overall_band: float  # 0-9 (IELTS overall)
     
+    # New IELTS 2026 Fields
+    thought_process: Optional[str] = None
+    upgrader: Optional[Dict[str, Any]] = None
+    
     # UI Helpers
     color_coded_transcript: List[Dict[str, Any]]  # [{word, color, phonetic_error?}]
     

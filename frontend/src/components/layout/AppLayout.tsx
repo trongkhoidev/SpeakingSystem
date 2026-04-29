@@ -9,14 +9,16 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+
   return (
-    <div className="app-root">
+    <div className={isSidebarCollapsed ? "app-root sidebar-collapsed" : "app-root"}>
       {/* ── 1. Navbar ngang trên cùng (60px) ── */}
-      <Navbar />
+      <Navbar onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
 
       {/* ── 2. Body: Sidebar (240px) + Main (flex:1) ── */}
       <div className="app-body">
-        <AppSidebar />
+        <AppSidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
         <main className="app-main">
           <div className="page-enter">
             {children || <Outlet />}

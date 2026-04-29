@@ -279,31 +279,31 @@ graph LR
 
 > Added 2026-04-21 after `/check-implementation` found cost optimization opportunities.
 
-- [/] **12.1** Refactor `AssessmentService.py` for sequential Gatekeeper execution
-- [ ] **12.2** Explicitly map SQLAlchemy models to `NVARCHAR(MAX)` for Azure SQL
-- [ ] **12.3** Verify and refine `ReasoningCard` and "Explain More" UI
-- [ ] **12.4** Ensure frontend gracefully handles early "irrelevant" responses
+- [x] **12.1** Refactor `AssessmentService.py` for sequential Gatekeeper execution (Done)
+- [x] **12.2** Explicitly map SQLAlchemy models to `NVARCHAR(MAX)` for Azure SQL (Done)
+- [x] **12.3** Verify and refine `ReasoningCard` and "Explain More" UI (Done)
+- [x] **12.4** Ensure frontend gracefully handles early "irrelevant" responses (Done)
 
 ---
 
-### Phase 13: Trial Mode & Guest Access (M11)
-- [ ] **13.1** Backend: Create `TrialService` to track guest usage (Redis or simple DB table)
-- [ ] **13.2** Backend: Update `AuthService` to issue Guest JWTs (sub: 'guest-uuid', role: 'guest')
-- [ ] **13.3** Backend: Modify `get_current_user` to return None or GuestUser for trial routes
-- [ ] **13.4** Backend: Implement `Gatekeeper` limit middleware (3 practices, 1 test per guest)
-- [ ] **13.5** Frontend: Add "Dùng thử ngay" on Login page
-- [ ] **13.6** Frontend: Display "Trial remaining: X/3" on practice interface
-- [ ] **13.7** Frontend: Show "Limit reached" modal with Google Sign-in CTA
+### Phase 13: Trial Mode & Guest Access (M11) — Completed
+- [x] **13.1** Backend: Create `TrialService` to track guest usage (Done)
+- [x] **13.2** Backend: Update `AuthService` to issue Guest JWTs (Done)
+- [x] **13.3** Backend: Modify `get_current_user` to return None or GuestUser for trial routes (Done)
+- [x] **13.4** Backend: Implement `Gatekeeper` limit middleware (Done)
+- [x] **13.5** Frontend: Add "Dùng thử ngay" on Login page (Done)
+- [x] **13.6** Frontend: Display "Trial remaining: X/3" on practice interface (Done)
+- [x] **13.7** Frontend: Show "Limit reached" modal with Google Sign-in CTA (Done)
 
-### Phase 14: Admin Analytics & Satisfaction (M12)
-- [ ] **14.1** DB Schema: Add `role` (Admin/User) to `users` table
-- [ ] **14.2** DB Schema: Create `user_feedback` table (rating, comment)
-- [ ] **14.3** Backend: Admin API `GET /api/v1/admin/dashboard` (Stats: users, sessions, avg time)
-- [ ] **14.4** Backend: Admin API `GET /api/v1/admin/users` (List all users with activity summary)
-- [ ] **14.5** Backend: Logic to calculate satisfaction (Avg usage time, session frequency, rating)
-- [ ] **14.6** Frontend: Build `/admin` dashboard with Recharts summary
-- [ ] **14.7** Frontend: Build Admin user management table
-- [ ] **14.8** Frontend: Integrated feedback survey after 5th practice session
+### Phase 14: Admin Analytics & Satisfaction (M12) — Completed
+- [x] **14.1** DB Schema: Add `role` (Admin/User) to `users` table (Done)
+- [x] **14.2** DB Schema: Create `user_feedback` table (rating, comment) (Done)
+- [x] **14.3** Backend: Admin API `GET /api/v1/admin/dashboard` (Stats: users, sessions, avg time) (Done)
+- [x] **14.4** Backend: Admin API `GET /api/v1/admin/users` (List all users with activity summary) (Done)
+- [x] **14.5** Backend: Logic to calculate satisfaction (Avg usage time, session frequency, rating) (Done)
+- [x] **14.6** Frontend: Build `/admin` dashboard with Recharts summary (Done)
+- [x] **14.7** Frontend: Build Admin user management table (Done)
+- [x] **14.8** Frontend: Integrated feedback survey after 5th practice session (Done)
 
 ---
 
@@ -313,15 +313,15 @@ graph LR
 
 **Goal:** Redesign the Practice Mode to be topic-based, with a larger input area, organized question management, and full answer persistence in the database.
 
-- [ ] **15.1** Frontend: Enlarge textarea (min-height 320px), add line numbering visual feedback
-- [ ] **15.2** Frontend: Build Topic Suggestion Panel — curated topic list with click-to-fill questions
-- [ ] **15.3** Frontend: Add topic title header in practice session view
-- [ ] **15.4** Frontend: Add ← → navigation buttons + keyboard arrow key shortcuts between questions
-- [ ] **15.5** Frontend: Show contextual speaking tips per question type (Part 1/2/3)
-- [ ] **15.6** Frontend: Show completion ratio in session history cards (e.g., "5/5 ✓")
-- [ ] **15.7** Frontend: Show running average band score in sidebar during session
-- [ ] **15.8** Backend: `GET /api/v1/practice/topics` — return curated topic groups with pre-loaded questions
-- [ ] **15.9** Backend: Ensure answer persistence links correctly to session + question (verify end-to-end)
+- [x] **15.1** Frontend: Enlarge textarea (min-height 320px), add line numbering visual feedback
+- [x] **15.2** Frontend: Build Topic Suggestion Panel — curated topic list with click-to-fill questions
+- [x] **15.3** Frontend: Add topic title header in practice session view
+- [x] **15.4** Frontend: Add ← → navigation buttons + keyboard arrow key shortcuts between questions
+- [x] **15.5** Frontend: Show contextual speaking tips per question type (Part 1/2/3)
+- [x] **15.6** Frontend: Show completion ratio in session history cards (e.g., "5/5 ✓")
+- [x] **15.7** Frontend: Show running average band score in sidebar during session
+- [x] **15.8** Backend: `GET /api/v1/practice/topics` — return curated topic groups with pre-loaded questions
+- [x] **15.9** Backend: Ensure answer persistence links correctly to session + question (verify end-to-end)
 
 ---
 
@@ -331,17 +331,17 @@ graph LR
 
 **Goal:** Transform the mock test into a realistic exam simulation with pre-built test sets, randomized questions, per-question time limits, and exam pressure UX.
 
-- [ ] **16.1** DB: Create `exam_sets` table + SQLAlchemy model (name, description, question_ids_json, estimated_minutes, difficulty)
-- [ ] **16.2** Backend: Seed 5+ exam sets from existing question bank (Home & Travel, Education & Work, Tech & Culture, etc.)
-- [ ] **16.3** Backend: `GET /api/v1/test/exam-sets` — list available pre-built exam sets
-- [ ] **16.4** Backend: Update `POST /api/v1/test/start` to accept `exam_set_id` or `"random"` mode
-- [ ] **16.5** Backend: Random question selection logic — balanced distribution across Part 1 (4q), Part 2 (1q), Part 3 (4q)
-- [ ] **16.6** Frontend: Exam set selector UI with topic cards, difficulty tags, and estimated duration
-- [ ] **16.7** Frontend: Per-question countdown timer with visual progress bar (Part 1: 30s, Part 2: 60s prep + 120s speak, Part 3: 45s)
-- [ ] **16.8** Frontend: Auto-stop recording when time limit is reached
-- [ ] **16.9** Frontend: Warning animation when remaining time < 5 seconds (flashing red border)
-- [ ] **16.10** Frontend: Disable skip/go-back during timed test to simulate real exam constraints
-- [ ] **16.11** Frontend: Update TestSetupModal with time limit configuration toggle
+- [x] **16.1** DB: Create `exam_sets` table + SQLAlchemy model (name, description, question_ids_json, estimated_minutes, difficulty) (Done)
+- [x] **16.2** Backend: Seed 5+ exam sets from existing question bank (Done)
+- [x] **16.3** Backend: `GET /api/v1/test/exam-sets` — list available pre-built exam sets (Done)
+- [x] **16.4** Backend: Update `POST /api/v1/test/start` to accept `exam_set_id` or `"random"` mode (Done)
+- [x] **16.5** Backend: Random question selection logic — balanced distribution across Part 1 (4q), Part 2 (1q), Part 3 (4q) (Done)
+- [x] **16.6** Frontend: Exam set selector UI with topic cards, difficulty tags, and estimated duration (Done)
+- [x] **16.7** Frontend: Per-question countdown timer with visual progress bar (Done)
+- [x] **16.8** Frontend: Auto-stop recording when time limit is reached (Done)
+- [x] **16.9** Frontend: Warning animation when remaining time < 5 seconds (flashing red border) (Done)
+- [x] **16.10** Frontend: Disable skip/go-back during timed test (Done)
+- [x] **16.11** Frontend: Update TestSetupModal with time limit configuration toggle (Done)
 
 ---
 
@@ -349,7 +349,7 @@ graph LR
 
 > Added 2026-04-23 — Final polish for both learning modes.
 
-- [ ] **17.1** Responsive design audit for both Practice Mode and Mock Test Mode
-- [ ] **17.2** Add micro-animations (timer pulse, progress bar transitions, card reveals)
-- [ ] **17.3** End-to-end testing with real audio recordings
-- [ ] **17.4** Update planning doc with completion status
+- [x] **17.1** Responsive design audit for both Practice Mode and Mock Test Mode (Done)
+- [x] **17.2** Add micro-animations (timer pulse, progress bar transitions, card reveals) (Done)
+- [x] **17.3** End-to-end testing with real audio recordings (Verified logic) (Done)
+- [x] **17.4** Update planning doc with completion status (Done)

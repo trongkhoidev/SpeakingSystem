@@ -7,6 +7,7 @@ import { useMediaRecorder } from '@/hooks/useMediaRecorder';
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
   onStreamUpdate?: (stream: MediaStream) => void;
+  onTranscriptUpdate?: (transcript: string) => void;
   className?: string;
   disabled?: boolean;
 }
@@ -14,6 +15,7 @@ interface AudioRecorderProps {
 export function AudioRecorder({ 
   onRecordingComplete, 
   onStreamUpdate,
+  onTranscriptUpdate,
   className,
   disabled = false
 }: AudioRecorderProps) {
@@ -22,12 +24,14 @@ export function AudioRecorder({
     duration,
     isError,
     volume,
+    transcript,
     startRecording,
     stopRecording,
     formatDuration
   } = useMediaRecorder({
     onRecordingComplete,
-    onStreamUpdate
+    onStreamUpdate,
+    onTranscriptUpdate
   });
 
   const toggleRecording = useCallback(() => {
@@ -59,7 +63,7 @@ export function AudioRecorder({
   const pulseScale = 1 + (volume / 255) * 1.5;
 
   return (
-    <div className={cn("flex flex-col items-center gap-8", className)}>
+    <div className={cn("flex flex-col items-center gap-4", className)}>
       <div className="relative">
         <AnimatePresence mode="wait">
           {isRecording && (
@@ -105,11 +109,11 @@ export function AudioRecorder({
           onClick={toggleRecording}
           disabled={disabled}
           className={cn(
-            "relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_0_50px_-12px_rgba(0,0,0,0.3)] z-10",
-            disabled ? "bg-gray-200 cursor-not-allowed" :
+            "relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 shadow-[0_0_40px_-12px_rgba(0,0,0,0.3)] z-10",
+            disabled ? "bg-slate-200 cursor-not-allowed" :
             isRecording 
               ? "bg-red-500 hover:bg-red-600 shadow-red-500/40" 
-              : "bg-primary hover:bg-primary/90 shadow-primary/40"
+              : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/40"
           )}
         >
           <AnimatePresence mode="wait">
@@ -121,7 +125,7 @@ export function AudioRecorder({
                 exit={{ scale: 0, rotate: 90 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
               >
-                <Square className="w-12 h-12 text-white fill-current" />
+                <Square className="w-8 h-8 text-white fill-current" />
               </motion.div>
             ) : (
               <motion.div
@@ -131,7 +135,7 @@ export function AudioRecorder({
                 exit={{ scale: 0, rotate: -90 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
               >
-                <Mic className="w-12 h-12 text-white" />
+                <Mic className="w-8 h-8 text-white" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -144,13 +148,13 @@ export function AudioRecorder({
             animate={isRecording ? { scale: [1, 1.05, 1] } : {}}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className={cn(
-              "text-4xl font-mono font-bold tracking-widest transition-colors",
-              isRecording ? "text-red-500" : "text-text-primary"
+              "text-2xl font-mono font-bold tracking-widest transition-colors",
+              isRecording ? "text-red-500" : "text-slate-900"
             )}
           >
             {formatDuration(duration)}
           </motion.div>
-          <div className="text-sm font-semibold uppercase tracking-wider text-text-tertiary">
+          <div className="text-[12px] font-semibold uppercase tracking-wider text-slate-400">
             {isRecording ? "Đang ghi âm..." : "Sẵn sàng"}
           </div>
         </div>
@@ -166,6 +170,7 @@ export function AudioRecorder({
             Nhấn <kbd className="font-mono bg-white border border-slate-300 rounded px-1 shadow-sm text-text-secondary">SPACE</kbd> để {isRecording ? 'dừng' : 'bắt đầu'}
           </span>
         </motion.div>
+
       </div>
 
       {isError && (

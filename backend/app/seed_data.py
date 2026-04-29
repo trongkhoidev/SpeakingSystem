@@ -1,5 +1,5 @@
 from app.core.database import SessionLocal
-from app.models.sqlalchemy_models import Topic, Question
+from app.models.sqlalchemy_models import Topic, Question, ExamSet
 import json
 
 def seed_data():
@@ -299,7 +299,84 @@ def seed_data():
                 db.add(q)
 
         db.commit()
-        print("Data seeded successfully!")
+        print("Topics and questions seeded successfully!")
+
+        # 4. Create Exam Sets
+        print("Clearing and seeding Exam Sets...")
+        db.query(ExamSet).delete()
+        
+        def get_q_ids(part, topic_name=None, limit=4):
+            query = db.query(Question).filter(Question.part == part)
+            if topic_name:
+                query = query.join(Topic).filter(Topic.name == topic_name)
+            return [q.id for q in query.limit(limit).all()]
+
+        exam_sets_data = [
+            {
+                "name": "Set 1: Home & Travel",
+                "description": "Focuses on personal background and travel experiences.",
+                "p1_topic": "Hometown",
+                "p2_topic": "Describe a beautiful city you have visited.",
+                "p3_topic": "Tourism",
+                "difficulty": "easy"
+            },
+            {
+                "name": "Set 2: Education & Career",
+                "description": "Discussion about studies, work, and future aspirations.",
+                "p1_topic": "Work or Study",
+                "p2_topic": "Describe an important decision you made in your life.",
+                "p3_topic": "Education & Career",
+                "difficulty": "medium"
+            },
+            {
+                "name": "Set 3: Technology & Society",
+                "description": "Deep dive into digital life and social impacts.",
+                "p1_topic": "Technology",
+                "p2_topic": "Describe a website you visit frequently.",
+                "p3_topic": "Social Media",
+                "difficulty": "hard"
+            },
+            {
+                "name": "Set 4: Lifestyle & Hobbies",
+                "description": "Conversations about daily life, reading, and interests.",
+                "p1_topic": "Daily Routine",
+                "p2_topic": "Describe a book you have recently read.",
+                "p3_topic": "Cultural Identity",
+                "difficulty": "medium"
+            },
+            {
+                "name": "Set 5: Environment & Future",
+                "description": "Global challenges and environmental awareness.",
+                "p1_topic": "Environment",
+                "p2_topic": "Describe a place you have visited that you would like to go back to.",
+                "p3_topic": "Environment",
+                "difficulty": "hard"
+            }
+        ]
+
+        for es in exam_sets_data:
+            p1_ids = get_q_ids(1, es["p1_topic"], 4)
+            p2_ids = get_q_ids(2, es["p2_topic"], 1)
+            p3_ids = get_q_ids(3, es["p3_topic"], 4)
+            
+            q_ids_dict = {
+                "part1": p1_ids,
+                "part2": p2_ids,
+                "part3": p3_ids
+            }
+            
+            if any(len(ids) > 0 for ids in q_ids_dict.values()):
+                exam_set = ExamSet(
+                    name=es["name"],
+                    description=es["description"],
+                    question_ids_json=json.dumps(q_ids_dict),
+                    estimated_minutes=14,
+                    difficulty=es["difficulty"]
+                )
+                db.add(exam_set)
+
+        db.commit()
+        print("Exam Sets seeded successfully!")
     except Exception as e:
         db.rollback()
         print(f"Error seeding data: {e}")

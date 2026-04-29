@@ -15,9 +15,9 @@ interface ReasoningCardsProps {
   answerId?: string;
   transcript: string;
   feedback: {
-    FC: { score: number; feedback: string; key_findings: string[] };
-    LR: { score: number; feedback: string; band_8_plus_words: string[] };
-    GRA: { score: number; feedback: string; error_types: string[]; complexity: string };
+    FC: { score: number; reasoning: string; solution: string; signposting_found?: string[] };
+    LR: { score: number; reasoning: string; solution: string; suggested_collocations?: string[]; idioms_to_use?: string[] };
+    GRA: { score: number; reasoning: string; solution: string; errors?: Array<{error: string, correction: string, rule: string}> };
   };
 }
 
@@ -32,9 +32,10 @@ export function ReasoningCards({ answerId, transcript, feedback }: ReasoningCard
       color: "from-blue-500/20 to-blue-400/5", 
       border: "border-blue-500/30", 
       text: "text-blue-400",
-      content: feedback.FC.feedback,
-      bullets: feedback.FC.key_findings,
-      bulletTitle: "Key Findings"
+      content: feedback.FC.reasoning,
+      solution: feedback.FC.solution,
+      bullets: feedback.FC.signposting_found || [],
+      bulletTitle: "Signposting Found"
     },
     { 
       id: 'LR', 
@@ -43,9 +44,10 @@ export function ReasoningCards({ answerId, transcript, feedback }: ReasoningCard
       color: "from-indigo-500/20 to-indigo-400/5", 
       border: "border-indigo-500/30", 
       text: "text-indigo-400",
-      content: feedback.LR.feedback,
-      bullets: feedback.LR.band_8_plus_words,
-      bulletTitle: "Advanced Vocabulary"
+      content: feedback.LR.reasoning,
+      solution: feedback.LR.solution,
+      bullets: [...(feedback.LR.suggested_collocations || []), ...(feedback.LR.idioms_to_use || [])],
+      bulletTitle: "Vocabulary Upgrades"
     },
     { 
       id: 'GRA', 
@@ -54,9 +56,10 @@ export function ReasoningCards({ answerId, transcript, feedback }: ReasoningCard
       color: "from-purple-500/20 to-purple-400/5", 
       border: "border-purple-500/30", 
       text: "text-purple-400",
-      content: feedback.GRA.feedback,
-      bullets: feedback.GRA.error_types,
-      bulletTitle: "Key Error Areas"
+      content: feedback.GRA.reasoning,
+      solution: feedback.GRA.solution,
+      bullets: (feedback.GRA.errors || []).map(e => `${e.error} → ${e.correction}`),
+      bulletTitle: "Grammar Fixes"
     }
   ];
 
@@ -146,6 +149,18 @@ export function ReasoningCards({ answerId, transcript, feedback }: ReasoningCard
                     {c.content}
                   </p>
                 </div>
+
+                {c.solution && (
+                  <div className="space-y-4 p-6 rounded-2xl bg-white/5 border border-white/5">
+                    <h5 className="text-[11px] font-black uppercase text-secondary/60 tracking-widest flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-secondary/40" />
+                      Suggested Solution
+                    </h5>
+                    <p className="text-white/70 text-sm leading-relaxed">
+                      {c.solution}
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {c.bullets && c.bullets.length > 0 && (

@@ -26,6 +26,7 @@ export interface TestConfig {
   examinerVoice: string;
   questionCount: number;
   followUpEnabled: boolean;
+  timeLimitEnabled: boolean;
 }
 
 export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' }: TestSetupModalProps) {
@@ -33,7 +34,8 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
     mode: initialMode,
     examinerVoice: 'female-uk',
     questionCount: 5,
-    followUpEnabled: true
+    followUpEnabled: true,
+    timeLimitEnabled: true
   });
 
   const voices = [
@@ -146,6 +148,25 @@ export function TestSetupModal({ isOpen, onClose, onStart, initialMode = 'full' 
                 {config.questionCount}
               </span>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <label className="text-[13px] font-bold text-[#1A1D2B] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#4361EE]" />
+                Áp lực thời gian (Time Limit)
+              </label>
+              <p className="text-[11px] text-[#9CA3AF]">Giới hạn thời gian nói như trong kỳ thi thật.</p>
+            </div>
+            <button 
+              onClick={() => setConfig({ ...config, timeLimitEnabled: !config.timeLimitEnabled })}
+              className="text-[#D1D5DB] hover:text-[#4361EE] transition-all"
+            >
+              {config.timeLimitEnabled 
+                ? <ToggleRight className="w-10 h-10 text-[#4361EE]" /> 
+                : <ToggleLeft className="w-10 h-10" />
+              }
+            </button>
           </div>
 
           <div className="flex items-center justify-between">

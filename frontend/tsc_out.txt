@@ -1,0 +1,47 @@
+
+> lexilearn-frontend@1.0.0 type-check
+> tsc --noEmit
+
+src/components/audio/RecordingModal.tsx(191,19): error TS2322: Type 'TranscriptionStatus' is not assignable to type '"closed" | "idle" | "connecting" | "listening" | "failed" | "unsupported" | undefined'.
+  Type '"fallback"' is not assignable to type '"closed" | "idle" | "connecting" | "listening" | "failed" | "unsupported" | undefined'.
+src/components/audio/WaveformVisualizer.tsx(15,27): error TS2554: Expected 1 arguments, but got 0.
+src/components/dashboard/BandEstimate.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/dashboard/BandEstimate.tsx(11,63): error TS6133: 'isLoading' is declared but its value is never read.
+src/components/dashboard/DailyMission.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/dashboard/DailyMission.tsx(10,68): error TS6133: 'isLoading' is declared but its value is never read.
+src/components/dashboard/FeatureCards.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/dashboard/ForecastProgress.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/dashboard/ForecastProgress.tsx(22,46): error TS6133: 'isLoading' is declared but its value is never read.
+src/components/dashboard/StreakCounter.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/feedback/AssessmentLoading.tsx(78,22): error TS6133: 's' is declared but its value is never read.
+src/components/feedback/FeedbackPanel.tsx(2,1): error TS6133: 'OverallBandBadge' is declared but its value is never read.
+src/components/feedback/FeedbackPanel.tsx(9,1): error TS6133: 'Button' is declared but its value is never read.
+src/components/index.ts(1,25): error TS2307: Cannot find module './ZenMode' or its corresponding type declarations.
+src/components/index.ts(2,34): error TS2307: Cannot find module './InsightDashboard' or its corresponding type declarations.
+src/components/shared/BandBadge.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/test/TestReport.tsx(11,3): error TS6133: 'Zap' is declared but its value is never read.
+src/components/test/TestReport.tsx(15,1): error TS6133: 'BandBadge' is declared but its value is never read.
+src/components/test/TestReport.tsx(16,1): error TS6133: 'Button' is declared but its value is never read.
+src/components/test/TestRunner.tsx(3,3): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/components/test/TestRunner.tsx(11,1): error TS6133: 'Button' is declared but its value is never read.
+src/components/test/TestRunner.tsx(84,62): error TS2367: This comparison appears to be unintentional because the types '3' and '2' have no overlap.
+src/components/test/TestRunner.tsx(292,19): error TS2322: Type '{ ref: RefObject<any>; onRecordingComplete: (blob: Blob) => Promise<void>; onStreamUpdate: (s: MediaStream) => void; }' is not assignable to type 'IntrinsicAttributes & AudioRecorderProps'.
+  Property 'ref' does not exist on type 'IntrinsicAttributes & AudioRecorderProps'.
+src/components/test/TestSetupModal.tsx(3,1): error TS6133: 'Button' is declared but its value is never read.
+src/components/test/TestSetupModal.tsx(156,18): error TS2552: Cannot find name 'Clock'. Did you mean 'Lock'?
+src/pages/PracticeModePage.tsx(3,3): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(6,3): error TS6133: 'Play' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(10,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(11,3): error TS6133: 'Trash2' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(12,3): error TS6133: 'Info' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(19,3): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(21,3): error TS6133: 'Settings' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(28,1): error TS6133: 'Button' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(68,9): error TS6133: 'user' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(79,10): error TS6133: 'activeSessionId' is declared but its value is never read.
+src/pages/PracticeModePage.tsx(216,9): error TS6133: 'deleteSession' is declared but its value is never read.
+src/pages/TestExamPage.tsx(3,3): error TS6133: 'Settings2' is declared but its value is never read.
+src/pages/TestExamPage.tsx(3,14): error TS6133: 'Plus' is declared but its value is never read.
+src/pages/TestExamPage.tsx(4,51): error TS6133: 'Lightbulb' is declared but its value is never read.
+src/pages/TestExamPage.tsx(5,28): error TS6133: 'BookOpen' is declared but its value is never read.
+src/pages/TestExamPage.tsx(124,51): error TS2783: 'mode' is specified more than once, so this usage will be overwritten.

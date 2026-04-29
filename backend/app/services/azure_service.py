@@ -62,16 +62,15 @@ class AzureService:
 
             speech_config = SpeechConfig(subscription=self.key, region=self.region)
             
-            # Use PushAudioInputStream to feed audio data from memory
-            from azure.cognitiveservices.speech.audio import PushAudioInputStream, AudioStreamFormat
+            import tempfile
+            import os
             
-            # Assuming wav data is already coming in as 16kHz mono 16-bit PCM (handled by preprocessor)
-            stream_format = AudioStreamFormat(samples_per_second=16000, bits_per_sample=16, channels=1)
-            push_stream = PushAudioInputStream(stream_format)
-            push_stream.write(audio_data)
-            push_stream.close()
-            
-            audio_config = AudioConfig(stream=push_stream)
+            # Save the WAV data to a temporary file because AudioConfig works best with standard WAV files
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_audio:
+                temp_audio.write(audio_data)
+                temp_audio_path = temp_audio.name
+                
+            audio_config = AudioConfig(filename=temp_audio_path)
             
             # Pronunciation Assessment Config
             pronunciation_config = PronunciationAssessmentConfig(
@@ -109,7 +108,7 @@ class AzureService:
                         p_detail = PhonemeDetail(
                             phoneme=ph.phoneme,
                             accuracy_score=ph.accuracy_score,
-                            errortype=self._map_error_type(ph.error_type)
+                            errortype=None # Phonemes don't have error_type in current SDK version
                         )
                         word_phonemes.append(p_detail)
                         phoneme_details.append(p_detail)
@@ -121,12 +120,29 @@ class AzureService:
                         phonemes=word_phonemes
                     ))
                 
+                # Extract scores, ensuring we check both the object and the raw JSON as a fallback
+                accuracy_score = assessment_result.accuracy_score
+                fluency_score = assessment_result.fluency_score
+                prosody_score = assessment_result.prosody_score
+                pronunciation_score = assessment_result.pronunciation_score
+                completeness_score = assessment_result.completeness_score
+                
+                # Fallback to raw JSON if object scores are 0 but might be in JSON (sometimes SDK versions differ)
+                if prosody_score == 0 and "PronunciationAssessment" in pronunciation_result:
+                    prosody_score = pronunciation_result["PronunciationAssessment"].get("ProsodyScore", 0.0)
+                if accuracy_score == 0 and "PronunciationAssessment" in pronunciation_result:
+                    accuracy_score = pronunciation_result["PronunciationAssessment"].get("AccuracyScore", 0.0)
+                if fluency_score == 0 and "PronunciationAssessment" in pronunciation_result:
+                    fluency_score = pronunciation_result["PronunciationAssessment"].get("FluencyScore", 0.0)
+                if pronunciation_score == 0 and "PronunciationAssessment" in pronunciation_result:
+                    pronunciation_score = pronunciation_result["PronunciationAssessment"].get("PronScore", 0.0)
+
                 return AzurePronunciationResult(
-                    accuracy_score=assessment_result.accuracy_score,
-                    fluency_score=assessment_result.fluency_score,
-                    prosody_score=assessment_result.prosody_score,
-                    pronunciation_score=assessment_result.pronunciation_score,
-                    completeness_score=assessment_result.completeness_score,
+                    accuracy_score=accuracy_score or 0.0,
+                    fluency_score=fluency_score or 0.0,
+                    prosody_score=prosody_score or 0.0,
+                    pronunciation_score=pronunciation_score or 0.0,
+                    completeness_score=completeness_score or 0.0,
                     phoneme_details=phoneme_details,
                     words=word_details,
                     raw_response=pronunciation_result
@@ -143,6 +159,9 @@ class AzureService:
         except Exception as e:
             logger.error(f"Pronunciation assessment failed: {str(e)}")
             raise RuntimeError(f"Pronunciation assessment failed: {str(e)}")
+        finally:
+            if 'temp_audio_path' in locals() and os.path.exists(temp_audio_path):
+                os.remove(temp_audio_path)
 
     def _map_error_type(self, error_type: str) -> Optional[str]:
         """Maps Azure error types to our model."""

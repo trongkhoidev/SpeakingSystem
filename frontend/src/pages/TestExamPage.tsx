@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Settings2, Plus, ChevronRight, Calendar, Award,
-  Zap, FileText, TrendingUp, History, ArrowRight, Lightbulb,
-  Clock, Target, Sparkles, BookOpen, Info
+  ChevronRight, Calendar, Award,
+  Zap, FileText, TrendingUp, History, ArrowRight,
+  Clock, Target, Sparkles, Info
 } from 'lucide-react';
 import { TestSetupModal, TestConfig } from '../components/test/TestSetupModal';
 import { TestRunner } from '../components/test/TestRunner';
@@ -82,6 +82,12 @@ export function TestExamPage() {
   const [loadingExamSets, setLoadingExamSets] = useState(false);
   const [selectedExamSetId, setSelectedExamSetId] = useState<string | null>(null);
   const [testMode, setTestMode]             = useState<'sets' | 'random'>('sets');
+  const [currentTime, setCurrentTime]       = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -115,7 +121,7 @@ export function TestExamPage() {
 
   const startTest = async (config: TestConfig) => {
     try {
-      const res = await api.post('/test/start', { mode: selectedMode, ...config });
+      const res = await api.post('/test/start', { ...config, mode: selectedMode });
       setActiveSession(res.data.session);
       setQuestions(res.data.questions);
       setTestConfig(config);
@@ -192,179 +198,249 @@ export function TestExamPage() {
 
   /* ── Main view ── */
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-
-      {/* ── Header ── */}
-      <div className="space-y-3">
-         <h1 className="text-[32px] font-bold text-[#1A1D2B] font-heading tracking-tight">IELTS Mock Test</h1>
-         <p className="text-[15px] text-[#6B7280]">Trải nghiệm cảm giác thi thật với các bộ đề được chuẩn bị sẵn và áp lực thời gian.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className="lg:col-span-3 space-y-6">
-          {/* Mode Toggle */}
-          <div className="flex bg-[#F0F2F5] p-1 rounded-xl w-fit">
-            <button 
-              onClick={() => setTestMode('sets')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all",
-                testMode === 'sets' ? "bg-white text-[#4361EE] shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
-              )}
-            >
-              Chọn bộ đề
-            </button>
-            <button 
-              onClick={() => setTestMode('random')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[13px] font-bold transition-all",
-                testMode === 'random' ? "bg-white text-[#4361EE] shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
-              )}
-            >
-              Ngẫu nhiên
-            </button>
+    <div className="w-full max-w-[1600px] mx-auto p-6 md:p-10 space-y-10 animate-in fade-in duration-500 bg-slate-50 min-h-screen">
+      
+      {/* ── HEADER (Đồng bộ Premium) ── */}
+      <header className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600 opacity-80" />
+        
+        {/* Tiêu đề trang */}
+        <div className="flex items-center gap-5 w-full">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+            <Award className="w-6 h-6" />
           </div>
-
-          {testMode === 'sets' ? (
-            <div className="grid grid-cols-1 gap-4">
-              {loadingExamSets ? (
-                [1,2,3].map(i => <div key={i} className="h-24 skeleton rounded-2xl" />)
-              ) : (
-                examSets.map(set => (
-                  <button 
-                    key={set.id}
-                    onClick={() => setSelectedExamSetId(set.id)}
-                    className={cn(
-                      "group p-6 bg-white border rounded-2xl flex items-center justify-between transition-all text-left shadow-sm",
-                      selectedExamSetId === set.id ? "border-[#4361EE] ring-1 ring-[#4361EE]" : "border-[#E8ECF1] hover:border-[#4361EE]/50"
-                    )}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
-                        set.difficulty === 'easy' ? "bg-[#E6F9F0] text-[#1A8F5C]" :
-                        set.difficulty === 'hard' ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#EEF0FD] text-[#4361EE]"
-                      )}>
-                        <Zap className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <div className="text-[16px] font-bold text-[#1A1D2B] mb-1">{set.name}</div>
-                        <div className="text-[13px] text-[#6B7280] line-clamp-1 mb-2">{set.description}</div>
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">
-                            <Clock className="w-3.5 h-3.5" /> {set.estimated_minutes} phút
-                          </span>
-                          <span className={cn(
-                            "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded",
-                            set.difficulty === 'easy' ? "bg-[#E6F9F0] text-[#1A8F5C]" :
-                            set.difficulty === 'hard' ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#EEF0FD] text-[#4361EE]"
-                          )}>
-                            {set.difficulty}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                      selectedExamSetId === set.id ? "border-[#4361EE] bg-[#4361EE]" : "border-[#E8ECF1]"
-                    )}>
-                      {selectedExamSetId === set.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-               {EXAM_MODES.map(mode => (
-                  <button
-                    key={mode.id}
-                    onClick={() => openSetup(mode.id)}
-                    className="group card p-6 text-left hover:border-[#4361EE] transition-all"
-                  >
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mb-4", mode.iconBg)}>
-                       <mode.icon size={22} color={mode.iconColor} />
-                    </div>
-                    <h3 className="text-[16px] font-bold text-[#1A1D2B] mb-1">{mode.title}</h3>
-                    <p className="text-[12px] text-[#6B7280] leading-relaxed line-clamp-2">{mode.description}</p>
-                  </button>
-               ))}
-            </div>
-          )}
-
-          <button 
-            disabled={testMode === 'sets' && !selectedExamSetId}
-            onClick={() => {
-               if (testMode === 'random') {
-                 openSetup('full');
-               } else {
-                 const selectedSet = examSets.find(s => s.id === selectedExamSetId);
-                 if (selectedSet) {
-                    startTest({
-                      mode: 'full',
-                      examinerVoice: localStorage.getItem('voice_pref') || 'female-uk',
-                      questionCount: 5,
-                      followUpEnabled: true,
-                      exam_set_id: selectedSet.id
-                    } as any);
-                 }
-               }
-            }}
-            className="btn btn-primary w-full py-4 h-14 text-[15px] font-bold shadow-xl shadow-indigo-100"
-          >
-            Bắt đầu bài thi ngay <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
+          <div className="flex-1 space-y-0.5">
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest opacity-60">Chế độ thi</p>
+            <h1 className="text-[22px] font-black text-slate-900 tracking-tight">IELTS Mock Test</h1>
+          </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="card p-6 border-none shadow-lg space-y-4">
-             <p className="section-title flex items-center gap-2">
-               <Info className="w-4 h-4 text-[#4361EE]" /> Quy định thi thử
-             </p>
-             <ul className="space-y-3">
+        {/* Thời gian hiện tại */}
+        <div className="flex flex-col items-center justify-center border-x border-slate-100 px-6">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Thời gian hiện tại</p>
+          <div className="flex items-center gap-2 text-slate-900">
+            <Clock className="w-4 h-4 text-blue-600" />
+            <span className="text-[18px] font-black tabular-nums">
+              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+            </span>
+          </div>
+        </div>
+        
+        {/* Trạng thái nhanh */}
+        <div className="flex justify-end items-center gap-4">
+           <div className="text-right hidden xl:block">
+              <p className="text-[11px] font-bold text-slate-500">Chuẩn bị sẵn sàng?</p>
+              <p className="text-[10px] text-slate-400 font-medium">Đảm bảo micro hoạt động tốt.</p>
+           </div>
+           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+              <Target className="w-5 h-5" />
+           </div>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-12 gap-8 items-start">
+        
+        {/* Cột trái: Cấu hình (8 cột) */}
+        <div className="col-span-12 lg:col-span-8 space-y-8">
+          
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-200 shadow-xl">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 pb-6 border-b border-slate-50">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-[18px] font-black text-slate-900 tracking-tight">Cấu hình bài thi</h2>
+                  <p className="text-[12px] font-bold text-slate-400">Chọn bộ đề thi thật hoặc luyện tập tự do</p>
+                </div>
+              </div>
+
+              {/* Mode Toggle */}
+              <div className="flex bg-slate-100 p-1 rounded-2xl w-fit shrink-0">
+                <button 
+                  onClick={() => setTestMode('sets')}
+                  className={cn(
+                    "px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
+                    testMode === 'sets' ? "bg-white text-blue-600 shadow-md" : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  Bộ đề
+                </button>
+                <button 
+                  onClick={() => setTestMode('random')}
+                  className={cn(
+                    "px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all",
+                    testMode === 'random' ? "bg-white text-blue-600 shadow-md" : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  Tự do
+                </button>
+              </div>
+            </div>
+
+            {testMode === 'sets' ? (
+              <div className="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
+                {loadingExamSets ? (
+                  [1,2,3].map(i => <div key={i} className="h-28 bg-slate-50 animate-pulse rounded-2xl" />)
+                ) : (
+                  examSets.map(set => (
+                    <button 
+                      key={set.id}
+                      onClick={() => setSelectedExamSetId(set.id)}
+                      className={cn(
+                        "group relative p-6 bg-slate-50 border-2 rounded-2xl flex items-center justify-between transition-all text-left overflow-hidden",
+                        selectedExamSetId === set.id 
+                          ? "bg-white border-blue-600 shadow-xl shadow-blue-50 ring-4 ring-blue-600/5" 
+                          : "border-transparent hover:border-blue-600/30 hover:bg-white"
+                      )}
+                    >
+                      <div className="flex items-center gap-5 relative">
+                        <div className={cn(
+                          "w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-inner",
+                          set.difficulty === 'easy' ? "bg-emerald-50 text-emerald-600" :
+                          set.difficulty === 'hard' ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-blue-600"
+                        )}>
+                          <FileText className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[16px] font-black text-slate-900 tracking-tight">{set.name}</span>
+                            <span className="bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">Official</span>
+                          </div>
+                          <p className="text-[12px] text-slate-500 font-medium line-clamp-1">{set.description}</p>
+                          <div className="flex items-center gap-4 pt-1">
+                            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                              <Clock className="w-3.5 h-3.5 text-blue-600" /> {set.estimated_minutes} phút
+                            </div>
+                            <div className={cn(
+                              "text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg",
+                              set.difficulty === 'easy' ? "bg-emerald-50 text-emerald-600" :
+                              set.difficulty === 'hard' ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-blue-600"
+                            )}>
+                              {set.difficulty}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={cn(
+                        "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all",
+                        selectedExamSetId === set.id ? "border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-200" : "border-slate-200 text-slate-200 group-hover:border-blue-600 group-hover:text-blue-600"
+                      )}>
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {EXAM_MODES.map(mode => (
+                    <button
+                      key={mode.id}
+                      onClick={() => openSetup(mode.id)}
+                      className="group p-6 bg-slate-50 border-2 border-transparent rounded-2xl text-left hover:border-blue-600 hover:bg-white transition-all flex gap-4"
+                    >
+                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm", mode.iconBg)}>
+                         <mode.icon size={20} color={mode.iconColor} />
+                      </div>
+                      <div>
+                        <h3 className="text-[15px] font-black text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{mode.title}</h3>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2">{mode.description}</p>
+                      </div>
+                    </button>
+                 ))}
+              </div>
+            )}
+
+            <button 
+              disabled={testMode === 'sets' && !selectedExamSetId}
+              onClick={() => {
+                 if (testMode === 'random') {
+                   openSetup('full');
+                 } else {
+                   const selectedSet = examSets.find(s => s.id === selectedExamSetId);
+                   if (selectedSet) {
+                      startTest({
+                        mode: 'full',
+                        examinerVoice: localStorage.getItem('voice_pref') || 'female-uk',
+                        questionCount: 5,
+                        followUpEnabled: true,
+                        exam_set_id: selectedSet.id
+                      } as any);
+                   }
+                 }
+              }}
+              className="w-full mt-10 py-5 bg-blue-900 text-white rounded-2xl font-black text-[15px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            >
+              Bắt đầu bài thi ngay 
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Cột phải: Sidebar (4 cột) */}
+        <div className="col-span-12 lg:col-span-4 space-y-8">
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl relative overflow-hidden group">
+             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
+               <Info className="w-12 h-12 text-blue-600" />
+             </div>
+             <h3 className="text-[13px] font-black text-blue-600 uppercase tracking-widest mb-6 flex items-center gap-3">
+                <Info className="w-4 h-4" />
+                Quy định phòng thi
+             </h3>
+             <ul className="space-y-4">
                {[
                  "Mỗi câu hỏi có giới hạn thời gian (30-60s).",
                  "Hệ thống tự động nộp bài khi hết giờ.",
                  "Không thể quay lại câu hỏi trước đó.",
                  "Cần đảm bảo micro hoạt động tốt."
                ].map((text, i) => (
-                 <li key={i} className="flex items-start gap-2 text-[13px] text-[#6B7280]">
-                   <div className="w-1.5 h-1.5 bg-[#4361EE] rounded-full mt-1.5 flex-shrink-0" />
+                 <li key={i} className="flex items-start gap-3 text-[12px] text-slate-500 font-medium leading-relaxed">
+                   <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 flex-shrink-0" />
                    {text}
                  </li>
                ))}
              </ul>
           </div>
 
-          <section className="space-y-4">
+          {/* Lịch sử thi */}
+          <section className="bg-white p-8 rounded-[2.5rem] border border-[#E8ECF1] shadow-xl space-y-6">
             <div className="flex items-center justify-between">
-              <p className="section-title mb-0">Lịch sử thi</p>
-              <button onClick={fetchHistory} className="text-[#4361EE] hover:underline text-[12px] font-bold uppercase tracking-wider">Làm mới</button>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-[#4361EE]">
+                   <History className="w-4 h-4" />
+                </div>
+                <h3 className="text-[14px] font-black text-[#1A1D2B] uppercase tracking-widest">Lịch sử thi</h3>
+              </div>
+              <button onClick={fetchHistory} className="text-[#4361EE] hover:underline text-[10px] font-black uppercase tracking-widest">Làm mới</button>
             </div>
+
             <div className="space-y-3">
               {loading ? (
-                [1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-xl" />)
+                [1,2,3].map(i => <div key={i} className="h-16 bg-[#F8FAFC] animate-pulse rounded-xl" />)
               ) : history.length === 0 ? (
-                <div className="p-8 text-center bg-white border border-dashed border-[#E8ECF1] rounded-2xl">
-                   <p className="text-[12.5px] text-[#9CA3AF]">Chưa có lịch sử thi</p>
+                <div className="p-10 text-center bg-[#F8FAFC] border-2 border-dashed border-[#E8ECF1] rounded-2xl">
+                   <p className="text-[12px] text-[#94A3B8] font-bold">Chưa có lịch sử thi</p>
                 </div>
               ) : (
                 history.slice(0, 5).map((item) => (
-                  <div 
+                  <button 
                     key={item.id}
                     onClick={() => handleViewReport(item.id)}
-                    className="card p-4 flex items-center justify-between cursor-pointer hover:border-[#4361EE] transition-all"
+                    className="w-full p-4 bg-[#F8FAFC] border-2 border-transparent rounded-2xl flex items-center justify-between hover:border-[#4361EE] hover:bg-white transition-all group"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 text-left">
                       <BandBadge score={item.overall_band || 0} size="sm" />
                       <div>
-                        <div className="text-[14px] font-bold text-[#1A1D2B]">{item.mode} Test</div>
-                        <div className="text-[11px] text-[#9CA3AF] flex items-center gap-1">
-                           <Calendar size={12} /> {new Date(item.created_at).toLocaleDateString('vi-VN')}
+                        <div className="text-[13px] font-black text-[#1A1D2B] group-hover:text-[#4361EE] transition-colors">{item.mode} Mock Test</div>
+                        <div className="text-[10px] text-[#94A3B8] font-bold flex items-center gap-1.5">
+                           <Calendar size={12} className="text-[#4361EE]" /> {new Date(item.created_at).toLocaleDateString('vi-VN')}
                         </div>
                       </div>
                     </div>
-                    <ChevronRight size={16} className="text-[#E8ECF1]" />
-                  </div>
+                    <ChevronRight size={14} className="text-[#CBD5E1] group-hover:text-[#4361EE] transition-colors" />
+                  </button>
                 ))
               )}
             </div>

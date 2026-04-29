@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, GraduationCap, Settings, LogOut } from 'lucide-react';
+import { Home, BookOpen, GraduationCap, Menu } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 
 const NAV_LINKS = [
@@ -8,19 +8,26 @@ const NAV_LINKS = [
   { to: '/test',     label: 'Thi thử',         icon: GraduationCap, end: false },
 ];
 
-export function Navbar() {
-  const { logout } = useAuth() as any;
+export function Navbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const navigate = useNavigate();
 
   return (
     <header className="app-navbar">
       {/* Logo */}
-      <NavLink to="/" className="nav-logo">
-        <div className="nav-logo-icon">L</div>
-        <span className="nav-logo-text">
-          Lexi<span>Learn</span>
-        </span>
-      </NavLink>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button 
+          onClick={onToggleSidebar}
+          className="w-10 h-10 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-colors"
+        >
+          <Menu size={20} />
+        </button>
+        <NavLink to="/" className="nav-logo">
+          <div className="nav-logo-icon">L</div>
+          <span className="nav-logo-text">
+            Lexi<span>Learn</span>
+          </span>
+        </NavLink>
+      </div>
 
       {/* Nav links */}
       <nav>
@@ -40,27 +47,6 @@ export function Navbar() {
             </li>
           ))}
 
-          <li><div className="nav-divider" /></li>
-
-          <li>
-            <button className="nav-link">
-              <Settings size={15} />
-              Cài đặt
-            </button>
-          </li>
-
-          <li>
-            <button
-              className="nav-link nav-link--danger"
-              onClick={() => {
-                logout?.();
-                navigate('/login', { replace: true });
-              }}
-            >
-              <LogOut size={15} />
-              Đăng xuất
-            </button>
-          </li>
         </ul>
       </nav>
     </header>

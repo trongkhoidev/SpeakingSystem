@@ -50,6 +50,11 @@ async def lifespan(app: FastAPI):
             logger.warning("⚠️  Gemini API key not configured")
         else:
             logger.info("✓ Gemini configured")
+    elif settings.LLM_PROVIDER == "deepseek":
+        if not settings.DEEPSEEK_API_KEY:
+            logger.warning("⚠️  DeepSeek API key not configured")
+        else:
+            logger.info("✓ DeepSeek configured")
     else:
         if not settings.OPENAI_API_KEY:
             logger.warning("⚠️  OpenAI API key not configured")

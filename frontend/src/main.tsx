@@ -11,6 +11,7 @@ const PracticeModePage = lazy(() => import('./pages/PracticeModePage').then(m =>
 const TestExamPage    = lazy(() => import('./pages/TestExamPage').then(m    => ({ default: m.TestExamPage })));
 const AdminDashboard  = lazy(() => import('./pages/AdminDashboard').then(m  => ({ default: m.AdminDashboard })));
 const PlansPage       = lazy(() => import('./pages/PlansPage').then(m       => ({ default: m.PlansPage })));
+const ProfilePage     = lazy(() => import('./pages/ProfilePage').then(m     => ({ default: m.ProfilePage })));
 
 const LoadingScreen = () => (
   <div
@@ -50,6 +51,7 @@ export function App() {
                 <Route path="/test"                 element={<TestExamPage />} />
                 <Route path="/test/:sessionId"      element={<TestExamPage />} />
                 <Route path="/plans"                element={<PlansPage />} />
+                <Route path="/profile"              element={<ProfilePage />} />
               </Route>
             </Route>
 

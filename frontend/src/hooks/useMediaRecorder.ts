@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 interface UseMediaRecorderProps {
   onRecordingComplete: (blob: Blob) => void;
   onStreamUpdate?: (stream: MediaStream) => void;
+  onTranscriptUpdate?: (transcript: string) => void;
   mimeType?: string;
 }
 
@@ -11,6 +12,7 @@ export interface UseMediaRecorderReturn {
   duration: number;
   isError: boolean;
   volume: number;
+  transcript: string;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   formatDuration: (seconds: number) => string;
@@ -19,14 +21,17 @@ export interface UseMediaRecorderReturn {
 export function useMediaRecorder({ 
   onRecordingComplete, 
   onStreamUpdate,
+  onTranscriptUpdate,
   mimeType = 'audio/webm'
 }: UseMediaRecorderProps): UseMediaRecorderReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [isError, setIsError] = useState(false);
   const [volume, setVolume] = useState(0);
+  const [transcript, setTranscript] = useState('');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recognitionRef = useRef<any>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -91,11 +96,45 @@ export function useMediaRecorder({
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
           audioContextRef.current.close().catch(console.error);
         }
+        
+        if (recognitionRef.current) {
+          try { recognitionRef.current.stop(); } catch (e) {}
+          recognitionRef.current = null;
+        }
       };
 
       mediaRecorder.start(100); 
       setIsRecording(true);
       setDuration(0);
+      setTranscript('');
+      if (onTranscriptUpdate) onTranscriptUpdate('');
+      
+      // Setup live transcription
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.lang = 'en-US';
+          
+          recognition.onresult = (event: any) => {
+            let currentTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+              currentTranscript += event.results[i][0].transcript;
+            }
+            setTranscript(currentTranscript);
+            if (onTranscriptUpdate) {
+              onTranscriptUpdate(currentTranscript);
+            }
+          };
+          
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (e) {
+          console.error("Speech recognition error:", e);
+        }
+      }
       
       timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1);
@@ -116,6 +155,13 @@ export function useMediaRecorder({
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
     
     setIsRecording(false);
@@ -146,6 +192,7 @@ export function useMediaRecorder({
     duration,
     isError,
     volume,
+    transcript,
     startRecording,
     stopRecording,
     formatDuration

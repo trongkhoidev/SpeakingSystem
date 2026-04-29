@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, GraduationCap, Settings, LogOut, TrendingUp, Star, ShieldCheck, Wallet } from 'lucide-react';
+import { Home, BookOpen, GraduationCap, Settings, LogOut, LogIn, TrendingUp, Star, ShieldCheck, Wallet } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { useEffect, useState } from 'react';
 import api from '../../lib/api';
@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { to: '/plans',    label: 'Gói & Token',     icon: Wallet,        end: false },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, onToggle: () => void }) {
   const { logout, user } = useAuth() as any;
   const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
@@ -29,7 +29,7 @@ export function AppSidebar() {
   const band = stats?.bandEstimate?.current ?? 0;
 
   return (
-    <aside className="app-sidebar">
+    <aside className={`app-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       {/* User info mini */}
       {user && (
         <div
@@ -57,9 +57,9 @@ export function AppSidebar() {
               flexShrink: 0,
             }}
           >
-            {(user.name || user.email || 'U')[0].toUpperCase()}
+            {(user.email || user.name || 'U')[0].toUpperCase()}
           </div>
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, display: isCollapsed ? 'none' : 'block' }}>
             <div
               style={{
                 fontSize: 12.5,
@@ -70,7 +70,7 @@ export function AppSidebar() {
                 textOverflow: 'ellipsis',
               }}
             >
-              {user.name || 'Người dùng'}
+              {user.email ? user.email.split('@')[0] : user.name || 'Người dùng'}
             </div>
             <div style={{ fontSize: 11, color: '#9CA3AF' }}>IELTS Learner</div>
           </div>
@@ -78,7 +78,7 @@ export function AppSidebar() {
       )}
 
       {/* Navigation */}
-      <p className="sidebar-section-label">Menu chính</p>
+      {!isCollapsed && <p className="sidebar-section-label">Menu chính</p>}
 
       {NAV_ITEMS.map((item) => (
         <NavLink
@@ -90,7 +90,7 @@ export function AppSidebar() {
           }
         >
           <item.icon size={16} />
-          {item.label}
+          {!isCollapsed && <span>{item.label}</span>}
         </NavLink>
       ))}
 
@@ -102,71 +102,78 @@ export function AppSidebar() {
           }
         >
           <ShieldCheck size={16} />
-          Admin Dashboard
+          {!isCollapsed && <span>Admin Dashboard</span>}
         </NavLink>
       )}
 
-      <div className="sidebar-divider" />
+      {!isCollapsed && <div className="sidebar-divider" />}
 
-      <p className="sidebar-section-label">Tiến độ</p>
+      {!isCollapsed && <p className="sidebar-section-label">Tiến độ</p>}
 
-      <div
-        style={{
-          padding: '10px 12px',
-          borderRadius: 8,
-          background: '#EEF0FD',
-          marginBottom: 4,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <TrendingUp size={13} color="#4361EE" />
-          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#4361EE' }}>Band ước tính</span>
-        </div>
-        {stats ? (
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#4361EE', lineHeight: 1 }}>{band.toFixed(1)}</div>
-        ) : (
-          <div className="skeleton" style={{ width: 40, height: 26, borderRadius: 4 }} />
-        )}
-        <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Dựa trên 10 bài gần nhất</div>
-      </div>
-
-      <div
-        style={{
-          padding: '8px 12px',
-          borderRadius: 8,
-          background: '#FFF7E6',
-          marginBottom: 4,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Star size={13} color="#B45309" fill="#B45309" />
+      {!isCollapsed && (
+        <div
+          style={{
+            padding: '10px 12px',
+            borderRadius: 8,
+            background: '#EEF0FD',
+            marginBottom: 4,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <TrendingUp size={13} color="#4361EE" />
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: '#4361EE' }}>Band ước tính</span>
+          </div>
           {stats ? (
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: '#B45309' }}>Streak: {streak} ngày</span>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#4361EE', lineHeight: 1 }}>{band.toFixed(1)}</div>
           ) : (
-            <div className="skeleton" style={{ width: 80, height: 14, borderRadius: 4 }} />
+            <div className="skeleton" style={{ width: 40, height: 26, borderRadius: 4 }} />
           )}
+          <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>Dựa trên 10 bài gần nhất</div>
         </div>
-      </div>
+      )}
+
+      {!isCollapsed && (
+        <div
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: '#FFF7E6',
+            marginBottom: 4,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Star size={13} color="#B45309" fill="#B45309" />
+            {stats ? (
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: '#B45309' }}>Streak: {streak} ngày</span>
+            ) : (
+              <div className="skeleton" style={{ width: 80, height: 14, borderRadius: 4 }} />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Push bottom actions down */}
       <div style={{ flex: 1 }} />
 
-      <div className="sidebar-divider" />
+      {!isCollapsed && <div className="sidebar-divider" />}
 
-      <button className="sidebar-item" onClick={() => toast.info('Cài đặt hệ thống đang được phát triển.')}>
+      <NavLink
+        to="/profile"
+        className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}
+      >
         <Settings size={16} />
-        Cài đặt
-      </button>
+        {!isCollapsed && <span>Thông tin & Cài đặt</span>}
+      </NavLink>
 
       <button
-        className="sidebar-item sidebar-item--danger"
+        className={`sidebar-item ${user?.role === 'guest' ? '' : 'sidebar-item--danger'}`}
         onClick={() => {
           logout?.();
           navigate('/login', { replace: true });
         }}
       >
-        <LogOut size={16} />
-        Đăng xuất
+        {user?.role === 'guest' ? <LogIn size={16} /> : <LogOut size={16} />}
+        {!isCollapsed && (user?.role === 'guest' ? 'Đăng nhập' : 'Đăng xuất')}
       </button>
     </aside>
   );

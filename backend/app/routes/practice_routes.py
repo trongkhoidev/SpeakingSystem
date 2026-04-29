@@ -27,8 +27,24 @@ async def create_practice_session(
 ):
     # Extract user_id — current_user may be a dict (guest) or User ORM object
     user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    print(f"DEBUG: Creating session for user_id={user_id}, type={type(current_user)}")
+    
+    # Ensure user exists in DB if it's a guest string
+    if isinstance(current_user, dict) or not hasattr(current_user, '__table__'):
+        # This shouldn't happen if get_current_user is working, but let's be safe
+        existing_user = db.query(User).filter(User.id == user_id).first()
+        if not existing_user:
+            print(f"DEBUG: Guest user {user_id} not found in DB, creating...")
+            new_user = User(
+                id=user_id,
+                email=f"{user_id}@lexilearn.guest",
+                full_name="Guest User",
+                role="guest"
+            )
+            db.add(new_user)
+            db.commit()
+            print(f"DEBUG: Created guest user {user_id}")
 
-    # 1. Create Session
     session = PracticeSession(
         id=str(uuid.uuid4()),
         user_id=user_id,
@@ -36,6 +52,14 @@ async def create_practice_session(
     )
     db.add(session)
     
+    try:
+        db.flush() # Force insert to catch FK errors early
+        print(f"DEBUG: Session {session.id} flushed successfully")
+    except Exception as e:
+        print(f"DEBUG: Failed to flush session: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error while creating session: {str(e)}")
+
     # 2. Add Questions
     saved_questions = []
     for q_in in data.questions:
@@ -49,7 +73,14 @@ async def create_practice_session(
         db.add(q)
         saved_questions.append(q)
     
-    db.commit()
+    try:
+        db.commit()
+        print(f"DEBUG: Session and {len(saved_questions)} questions committed successfully")
+    except Exception as e:
+        print(f"DEBUG: Failed to commit questions: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error while saving questions: {str(e)}")
+    
     db.refresh(session)
     
     return {

@@ -9,91 +9,78 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+from app.services.llm_service import LLMService
+
 class GatekeeperService:
     """
     Stage 0: The Gatekeeper.
     Ensures the student's answer is relevant to the question.
-    Uses Gemini Embeddings + Cosine Similarity + LLM Reasoning.
+    Uses Gemini Embeddings + Cosine Similarity + DeepSeek Reasoning.
     """
     
     def __init__(self):
         self.gemini_key = settings.GEMINI_API_KEY
+        self.llm_service = LLMService()
         if self.gemini_key:
             genai.configure(api_key=self.gemini_key)
         
     async def check_relevance(self, question: str, transcript: str) -> Tuple[bool, int]:
         """
         Perform a multi-step relevance check.
-        
-        1. Calculate Cosine Similarity of embeddings.
-        2. If in doubt (0.4 - 0.6), use LLM for deep reasoning.
-        
-        Returns: (is_relevant, relevance_score)
         """
         
         if not transcript or len(transcript.strip()) < 10:
             return False, 0
 
+        # If Gemini is known to be problematic/blocked, skip to LLM reasoning directly
+        # For now, we try embeddings but catch the specific 403/404 errors
         try:
-            # 1. Get Embeddings using Gemini
-            # Note: Using embedding-001 or text-embedding-004
-            model = 'models/text-embedding-004'
-            
+            model = 'models/embedding-001'
             q_emb = genai.embed_content(model=model, content=question, task_type="retrieval_query")["embedding"]
             a_emb = genai.embed_content(model=model, content=transcript, task_type="retrieval_document")["embedding"]
             
-            # calculate cosine similarity (1 - cosine distance)
             similarity = 1 - cosine(q_emb, a_emb)
             score = int(similarity * 100)
             
             logger.info(f"Gatekeeper: Cosine Similarity = {similarity:.4f}")
             
-            # 2. Decision Logic
-            if similarity > 0.6:
+            if similarity > 0.65:
                 return True, score
-            elif similarity < 0.35:
+            elif similarity < 0.30:
                 return False, score
             else:
-                # Grey area: 0.35 - 0.60. Use LLM Reasoning.
                 return await self._llm_reasoning(question, transcript, score)
                 
         except Exception as e:
-            logger.error(f"Gatekeeper error: {str(e)}")
-            # Fallback to LLM only if embeddings fail
+            logger.warning(f"Gatekeeper Embedding skipped or failed: {str(e)}")
+            # Fallback to LLM reasoning (OpenAI/DeepSeek/Gemini)
             return await self._llm_reasoning(question, transcript, 50)
 
     async def _llm_reasoning(self, question: str, transcript: str, base_score: int) -> Tuple[bool, int]:
-        """Deep semantic check using LLM."""
+        """Deep semantic check using the configured LLM provider."""
         
         prompt = f"""
-        Analyze if the following student response is relevant to the IELTS question.
-        A response is relevant if it attempts to answer the question, even if briefly or with poor language.
-        It is IRRELEVANT only if it talks about a completely different topic (e.g., question is about "Hobby" but student talks about "Weather").
+        Analyze if transcript is relevant to question.
+        Q: "{question}"
+        A: "{transcript}"
         
-        Question: "{question}"
-        Student Response: "{transcript}"
-        
-        Return ONLY a JSON object:
-        {{
-            "is_relevant": boolean,
-            "relevance_score": 0-100,
-            "reason": "Brief explanation"
-        }}
+        JSON ONLY: {{"is_relevant": bool, "relevance_score": 0-100, "reason": "VN reasoning"}}
         """
         
         try:
-            # Use Gemini Pro for reasoning
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(prompt)
+            res_json = {}
+            if self.llm_service.provider == 'openai':
+                res_json = await self.llm_service._call_openai_stage2(prompt)
+            elif self.llm_service.provider == 'deepseek':
+                res_json = await self.llm_service._call_deepseek(prompt)
+            elif self.llm_service.provider == 'groq':
+                res_json = await self.llm_service._call_groq(prompt)
+            else:
+                # Default to gemini fallback logic
+                res_json = await self.llm_service._call_gemini_stage2(prompt)
             
-            import json
-            # Clean response text in case of markdown formatting
-            text = response.text.replace('```json', '').replace('```', '').strip()
-            data = json.loads(text)
-            
-            return data.get("is_relevant", True), data.get("relevance_score", base_score)
+            return res_json.get("is_relevant", True), res_json.get("relevance_score", base_score)
             
         except Exception as e:
-            logger.error(f"LLM Reasoning failed: {str(e)}")
-            # If everything fails, be lenient and allow the assessment to proceed
+            logger.error(f"Gatekeeper LLM Reasoning failed: {str(e)}")
             return True, base_score

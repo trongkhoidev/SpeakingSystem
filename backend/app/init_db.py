@@ -2,7 +2,14 @@ import sys
 import os
 from .core.database import engine, Base
 # Import all models here so they are registered with Base.metadata
-from .models.sqlalchemy_models import User, Topic, Question, Answer
+from .models.sqlalchemy_models import (
+    User, Topic, Question, CustomQuestion, 
+    PracticeSession, PracticeAnswer, 
+    TestSession, TestAnswer, 
+    UserFeedback, GuestTrial, 
+    UserTokenWallet, BillingPlan, 
+    SubscriptionRequest, ExamSet
+)
 
 def init_db():
     print("Initializing database...")

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
@@ -32,20 +33,17 @@ api.interceptors.response.use(
 
     if (status === 402) {
       if (typeof window !== 'undefined') {
-        window.alert(detail || 'Bạn đã hết token. Vui lòng nâng cấp gói hoặc nhận token thưởng hằng ngày.');
-        if (window.location.pathname !== '/plans') {
-          window.location.href = '/plans';
-        }
+        toast.error(detail || 'Bạn đã hết token. Vui lòng nâng cấp gói hoặc nhận token thưởng hằng ngày.');
+        // Trigger a global custom event so components can show a nice modal
+        window.dispatchEvent(new CustomEvent('insufficient-tokens'));
       }
     }
 
     if (status === 403 && typeof detail === 'string') {
       if (detail.toLowerCase().includes('sign in with google') || detail.toLowerCase().includes('guest trial quota')) {
         if (typeof window !== 'undefined') {
-          window.alert('Bạn đã hết lượt dùng thử. Vui lòng đăng nhập Google để tiếp tục.');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
+          toast.error('Bạn đã hết lượt dùng thử. Vui lòng đăng nhập Google để tiếp tục.');
+          window.dispatchEvent(new CustomEvent('trial-limit-reached'));
         }
       }
     }

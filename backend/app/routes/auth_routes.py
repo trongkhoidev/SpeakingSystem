@@ -51,13 +51,29 @@ async def get_current_user(
         )
         
     if role == "guest":
-        # Return a mock user object for guests
-        return {
-            "id": user_id,
-            "role": "guest",
-            "email": "guest@trial.com",
-            "full_name": "Guest User"
-        }
+        # Ensure guest exists in DB to satisfy FK constraints
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                user = User(
+                    id=user_id,
+                    email=f"{user_id}@lexilearn.guest",
+                    full_name="Guest User",
+                    role="guest"
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            return user
+        except Exception as e:
+            logger.error(f"Failed to fetch/create guest user: {e}")
+            # Fallback to dict for backward compatibility or DB failure
+            return {
+                "id": user_id,
+                "role": "guest",
+                "email": f"{user_id}@lexilearn.guest",
+                "full_name": "Guest User"
+            }
         
     try:
         user = db.query(User).filter(User.id == user_id).first()
@@ -203,13 +219,31 @@ async def google_login(
 
 @router.post("/guest", response_model=Token)
 async def guest_login(db: Session = Depends(get_db)):
-    """Issue a trial token for a guest user."""
+    """Issue a trial token for a guest user and persist it to satisfy FK constraints."""
     import uuid
     guest_id = f"guest-{uuid.uuid4()}"
+    guest_email = f"{guest_id}@lexilearn.guest"
     
+    # Persist guest to DB so FK constraints on practice_sessions etc. work
+    try:
+        guest_user = User(
+            id=guest_id,
+            email=guest_email,
+            full_name="Guest User",
+            role="guest"
+        )
+        db.add(guest_user)
+        db.commit()
+        db.refresh(guest_user)
+    except Exception as e:
+        logger.error(f"Failed to persist guest user: {e}")
+        # Fallback: if DB fails, still try to return a token, 
+        # though downstream DB writes will fail.
+        pass
+
     access_token = create_access_token(data={
         "sub": guest_id,
-        "email": "guest@trial.com",
+        "email": guest_email,
         "role": "guest"
     })
     
@@ -218,7 +252,7 @@ async def guest_login(db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user": {
             "id": guest_id,
-            "email": "guest@trial.com",
+            "email": guest_email,
             "full_name": "Guest User",
             "role": "guest"
         }
