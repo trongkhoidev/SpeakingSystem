@@ -77,7 +77,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8080",
-        os.getenv("FRONTEND_URL", "*"),
+        "https://speakingsystem-production-ec7b.up.railway.app",
+        os.getenv("FRONTEND_URL", "https://speakingsystem-production-ec7b.up.railway.app"),
     ]
 
 
