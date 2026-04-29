@@ -53,7 +53,7 @@ class Topic(TopicBase):
 
 
 class TopicWithQuestions(Topic):
-    questions: List[Question] = []
+    questions: List["Question"] = []
 
 
 class QuestionBase(BaseModel):
