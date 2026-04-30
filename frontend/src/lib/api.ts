@@ -1,7 +1,12 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+// Ensure production URL has /api/v1 suffix if it's missing
+if (API_URL && !API_URL.endsWith('/api/v1') && !API_URL.endsWith('/api/v1/')) {
+  API_URL = API_URL.endsWith('/') ? `${API_URL}api/v1` : `${API_URL}/api/v1`;
+}
 
 const api = axios.create({
   baseURL: API_URL,

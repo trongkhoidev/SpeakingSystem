@@ -3,10 +3,25 @@
 import io
 import os
 import logging
+import subprocess
 from pydub import AudioSegment
 from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
+
+# Explicitly set ffmpeg path for pydub to avoid "Couldn't find ffmpeg" warning
+# Standard location in Debian/Ubuntu is /usr/bin/ffmpeg
+if os.path.exists("/usr/bin/ffmpeg"):
+    AudioSegment.converter = "/usr/bin/ffmpeg"
+elif os.path.exists("/usr/local/bin/ffmpeg"):
+    AudioSegment.converter = "/usr/local/bin/ffmpeg"
+else:
+    # Try to find it in PATH
+    try:
+        subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        AudioSegment.converter = "ffmpeg"
+    except Exception:
+        logger.warning("ffmpeg not found in /usr/bin or PATH. Audio processing may fail.")
 
 class AudioPreprocessor:
     """Service for audio format conversion and resampling."""

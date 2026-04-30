@@ -6,8 +6,12 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
+import warnings
 from app.core.config import settings
 from app.routes import main_router
+
+# Suppress minor runtime warnings that don't affect functionality
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="pydub.*")
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +28,7 @@ async def lifespan(app: FastAPI):
     # Log ngay lập tức để Railway biết app đang chạy
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting...")
     logger.info(f"🌐 Environment: {'Debug' if settings.DEBUG else 'Production'}")
+    logger.info(f"🔒 CORS Allowed Origins: {settings.CORS_ORIGINS}")
     logger.info("✅ App ready — database will connect on first request")
     
     yield

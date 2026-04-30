@@ -23,6 +23,9 @@ class GatekeeperService:
         self.llm_service = LLMService()
         if self.gemini_key:
             genai.configure(api_key=self.gemini_key)
+            self.initialized = True
+        else:
+            self.initialized = False
         
     async def check_relevance(self, question: str, transcript: str) -> Tuple[bool, int]:
         """
@@ -31,13 +34,24 @@ class GatekeeperService:
         
         if not transcript or len(transcript.strip()) < 10:
             return False, 0
+            
+        if not self.initialized:
+            logger.warning("Gatekeeper: Gemini client not initialized. Skipping embeddings.")
+            return await self._llm_reasoning(question, transcript, 50)
 
         # If Gemini is known to be problematic/blocked, skip to LLM reasoning directly
         # For now, we try embeddings but catch the specific 403/404 errors
         try:
-            model = 'models/embedding-001'
-            q_emb = genai.embed_content(model=model, content=question, task_type="retrieval_query")["embedding"]
-            a_emb = genai.embed_content(model=model, content=transcript, task_type="retrieval_document")["embedding"]
+            model = 'text-embedding-004' # Using latest embedding model
+            
+            # Use synchronous embedding call as the SDK doesn't seem to have a simple async one 
+            # for embeddings yet in the same way, or we can use run_in_executor if needed.
+            # However, for simplicity and since it's a single call:
+            q_res = genai.embed_content(model=f"models/{model}", content=question, task_type="retrieval_query")
+            a_res = genai.embed_content(model=f"models/{model}", content=transcript, task_type="retrieval_query")
+            
+            q_emb = q_res['embedding']
+            a_emb = a_res['embedding']
             
             similarity = 1 - cosine(q_emb, a_emb)
             score = int(similarity * 100)
