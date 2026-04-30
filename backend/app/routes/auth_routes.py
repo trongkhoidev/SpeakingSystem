@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 from joserfc import jwt
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 import httpx
 import logging
 from typing import Any, Dict, Optional
@@ -104,31 +106,14 @@ async def google_login(
                     detail="Auth system misconfigured: Google Client ID missing"
                 )
         else:
-            # Fetch Google's public keys
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(settings.GOOGLE_CONF_URL)
-                resp.raise_for_status()
-                jwks_uri = resp.json().get("jwks_uri")
-                
-                resp = await client.get(jwks_uri)
-                resp.raise_for_status()
-                jwks = resp.json()
-            
             try:
-                # joserfc decode returns a Token object. The claims are in .claims
-                token = jwt.decode(
+                # Use official Google library to verify the ID token
+                # This handles JWKS fetching, caching, and claims validation (iss, aud, exp) automatically.
+                payload = id_token.verify_oauth2_token(
                     login_data.id_token, 
-                    jwks
+                    google_requests.Request(), 
+                    settings.GOOGLE_CLIENT_ID
                 )
-                payload = token.claims
-                
-                # Manual validation of issuer and audience
-                iss = payload.get("iss")
-                aud = payload.get("aud")
-                if iss not in ["https://accounts.google.com", "accounts.google.com"]:
-                    raise ValueError("Invalid issuer")
-                if aud != settings.GOOGLE_CLIENT_ID:
-                    raise ValueError("Invalid audience")
             except Exception as jwt_err:
                 logger.error(f"JWT verification failed: {str(jwt_err)}")
                 raise HTTPException(
