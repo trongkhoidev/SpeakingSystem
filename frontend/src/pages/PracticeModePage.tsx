@@ -157,6 +157,10 @@ export function PracticeModePage() {
           ? { ...item, status: 'answered', feedback: response.data, overall_band: response.data.overall_band }
           : item
       ));
+      
+      // Refresh tokens in navbar real-time
+      window.dispatchEvent(new CustomEvent('refresh-tokens'));
+      
       toast.success('Đánh giá hoàn tất!');
     } catch (error: any) {
       if (error.response?.status === 403 && user?.role === 'guest') {

@@ -12,6 +12,10 @@ const NAV_ITEMS = [
   { to: '/plans',    label: 'Gói & Token',     icon: Wallet,        end: false },
 ];
 
+const ADMIN_NAV_ITEMS = [
+  { to: '/admin',    label: 'Quản trị hệ thống', icon: ShieldCheck,   end: false },
+];
+
 export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, onToggle: () => void }) {
   const { user } = useAuth() as any;
   const [stats, setStats] = useState<any>(null);
@@ -94,6 +98,27 @@ export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, on
           {!isCollapsed && <span>{item.label}</span>}
         </NavLink>
       ))}
+
+      {user?.role === 'admin' && (
+        <>
+          {!isCollapsed && <div className="sidebar-divider" />}
+          {!isCollapsed && <p className="sidebar-section-label">Quản trị</p>}
+          {ADMIN_NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `sidebar-item admin-item${isActive ? ' active' : ''}`
+              }
+              style={{ color: '#4361EE' }}
+            >
+              <item.icon size={16} />
+              {!isCollapsed && <span>{item.label}</span>}
+            </NavLink>
+          ))}
+        </>
+      )}
 
 
       {!isCollapsed && <div className="sidebar-divider" />}

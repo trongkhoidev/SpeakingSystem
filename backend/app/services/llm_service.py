@@ -1,7 +1,7 @@
 """LLM service for linguistic analysis using Gemini, GPT, or DeepSeek."""
 
 import asyncio
-import aiohttp
+from google import genai
 from typing import Optional, Dict, Any
 from app.models.assessment import LexicalAnalysis, GrammarAnalysis
 from app.core.config import settings
@@ -21,6 +21,11 @@ class LLMService:
         self.openai_key = settings.OPENAI_API_KEY
         self.deepseek_key = settings.DEEPSEEK_API_KEY
         self.groq_key = settings.GROQ_API_KEY
+        
+        if self.gemini_key:
+            self.client = genai.Client(api_key=self.gemini_key)
+        else:
+            self.client = None
     
     async def analyze_lexical_resource(
         self,
@@ -108,6 +113,12 @@ class LLMService:
         3. Identify the current band level of the response.
         4. Provide an "improved_sample_answer" that is approximately 1.0 band higher than the current level (e.g., if user is 5.0, target 6.0+).
         5. The sample answer must be professional, natural, and demonstrate exactly how to move to the next level.
+        
+        LANGUAGE RULES:
+        - Evaluation fields ("thought_process", "reasoning"): Use VIETNAMESE to explain the scores and identify errors.
+        - Suggestion/Instruction fields ("solution", "overall_advice", "usage"): Use ENGLISH.
+        - Sample Answer field ("improved_sample_answer"): Use ENGLISH.
+        - Dictionary fields ("meaning"): Use VIETNAMESE.
 
         Task: Grade this transcript: "{transcript}" for question: "{question}".
         
@@ -117,26 +128,26 @@ class LLMService:
             "FC": {{ 
                 "score": <float>, 
                 "reasoning": "Tại sao đạt điểm này? (Tiếng Việt)", 
-                "solution": "Hướng dẫn phát triển ý bằng WHY-WHAT-HOW chi tiết (Tiếng Việt)"
+                "solution": "Detailed instructions on how to develop the answer using WHY-WHAT-HOW (English)"
             }},
             "LR": {{ 
                 "score": <float>, 
                 "reasoning": "Phân tích từ vựng (Tiếng Việt)", 
-                "solution": "Cách mở rộng vốn từ (Tiếng Việt)"
+                "solution": "Suggestions for expanding vocabulary range and precision (English)"
             }},
             "GRA": {{ 
                 "score": <float>, 
                 "reasoning": "Phân tích ngữ pháp (Tiếng Việt)", 
-                "solution": "Cách nâng cấp cấu trúc (Tiếng Việt)"
+                "solution": "Suggestions for using more complex structures and improving accuracy (English)"
             }},
             "upgrader": {{
                 "target_band": <float>,
-                "topic_vocabulary": [{{ "phrase": "EN", "meaning": "VN", "usage": "Giải thích cách dùng" }}],
-                "collocations": [{{ "phrase": "EN", "meaning": "VN" }}],
-                "idioms": [{{ "phrase": "EN", "meaning": "VN" }}],
-                "improved_sample_answer": "Phiên bản nâng cấp +1.0 Band (EN)"
+                "topic_vocabulary": [{{ "phrase": "English Phrase", "meaning": "Nghĩa tiếng Việt", "usage": "English usage example" }}],
+                "collocations": [{{ "phrase": "English Collocation", "meaning": "Nghĩa tiếng Việt" }}],
+                "idioms": [{{ "phrase": "English Idiom", "meaning": "Nghĩa tiếng Việt" }}],
+                "improved_sample_answer": "A professional and natural IELTS response at the target band level (English)"
             }},
-            "overall_advice": "Lời khuyên tổng quát (Tiếng Việt)"
+            "overall_advice": "General advice for improvement (English)"
         }}
         """
 
@@ -223,30 +234,41 @@ class LLMService:
         return GrammarAnalysis(**res)
 
     async def _call_gemini_stage2(self, prompt: str) -> Dict[str, Any]:
-        """Call Google Gemini 2.0 Flash."""
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-        params = {"key": self.gemini_key}
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": { "temperature": 0.3, "response_mime_type": "application/json" }
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, params=params, json=payload, timeout=45) as response:
-                result = await response.json()
-                text = result["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(text.strip().lstrip("```json").rstrip("```"))
+        """Call Google Gemini 2.0 Flash using official SDK."""
+        if not self.client:
+            raise ValueError("GEMINI_API_KEY is not configured")
+
+        try:
+            # Use gemini-2.0-flash model
+            response = self.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+                config={
+                    "temperature": 0.3,
+                    "response_mime_type": "application/json"
+                }
+            )
+            
+            # The SDK handles the response parsing
+            return json.loads(response.text)
+        except Exception as e:
+            logger.error(f"Gemini SDK Error: {str(e)}")
+            raise ValueError(f"Gemini API error: {str(e)}")
 
     async def _call_openai_stage2(self, prompt: str) -> Dict[str, Any]:
-        """Call OpenAI GPT."""
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = { "Authorization": f"Bearer {self.openai_key}", "Content-Type": "application/json" }
-        payload = {
-            "model": "gpt-4-turbo-preview",
-            "messages": [{"role": "user", "content": prompt}],
-            "response_format": { "type": "json_object" },
-            "temperature": 0.3
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers, json=payload, timeout=45) as response:
-                result = await response.json()
-                return json.loads(result["choices"][0]["message"]["content"])
+        """Call OpenAI GPT using official SDK for consistency."""
+        if not self.openai_key:
+            raise ValueError("OPENAI_API_KEY is not configured")
+            
+        client = AsyncOpenAI(api_key=self.openai_key)
+        try:
+            response = await client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={ "type": "json_object" },
+                temperature=0.3
+            )
+            return json.loads(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"OpenAI Error: {str(e)}")
+            raise ValueError(f"OpenAI API error: {str(e)}")

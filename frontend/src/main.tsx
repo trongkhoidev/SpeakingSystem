@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from './lib/auth-context';
 
 const DashboardPage   = lazy(() => import('./pages/DashboardPage').then(m   => ({ default: m.DashboardPage })));
 const PracticeModePage = lazy(() => import('./pages/PracticeModePage').then(m => ({ default: m.PracticeModePage })));
@@ -38,6 +39,12 @@ const LoadingScreen = () => (
   </div>
 );
 
+const AdminRedirect = () => {
+  const { user, isAdmin } = useAuth();
+  if (isAdmin) return <Navigate to="/admin" replace />;
+  return <DashboardPage />;
+};
+
 export function App() {
   return (
     <>
@@ -49,7 +56,7 @@ export function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                <Route path="/"                     element={<DashboardPage />} />
+                <Route path="/"                     element={<AdminRedirect />} />
                 <Route path="/practice"             element={<PracticeModePage />} />
                 <Route path="/practice/:partId"     element={<PracticeModePage />} />
                 <Route path="/test"                 element={<TestExamPage />} />
