@@ -240,23 +240,35 @@ class LLMService:
 
         try:
             # Use gemini-1.5-flash for higher stability on production
-            # Relax safety settings to prevent false positives from blocking feedback
+            # Relax safety settings using correct HARM_CATEGORY prefix
             safety_settings = [
-                {"category": "HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
             ]
 
-            response = self.client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=prompt,
-                config={
-                    "temperature": 0.2,
-                    "response_mime_type": "application/json",
-                    "safety_settings": safety_settings
-                }
-            )
+            try:
+                response = self.client.models.generate_content(
+                    model="gemini-1.5-flash",
+                    contents=prompt,
+                    config={
+                        "temperature": 0.2,
+                        "response_mime_type": "application/json",
+                        "safety_settings": safety_settings
+                    }
+                )
+            except Exception as safety_err:
+                logger.warning(f"Gemini with safety settings failed, retrying without them: {str(safety_err)}")
+                # Fallback: try without safety settings if the categories are still problematic
+                response = self.client.models.generate_content(
+                    model="gemini-1.5-flash",
+                    contents=prompt,
+                    config={
+                        "temperature": 0.2,
+                        "response_mime_type": "application/json"
+                    }
+                )
             
             # Robust extraction of text
             text_content = ""
