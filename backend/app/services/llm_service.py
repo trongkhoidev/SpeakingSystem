@@ -234,32 +234,49 @@ class LLMService:
         return GrammarAnalysis(**res)
 
     async def _call_gemini_stage2(self, prompt: str) -> Dict[str, Any]:
-        """Call Google Gemini 2.0 Flash using official SDK."""
+        """Call Google Gemini using official SDK with safety settings and fallbacks."""
         if not self.client:
             raise ValueError("GEMINI_API_KEY is not configured")
 
         try:
-            # Use gemini-2.0-flash model
+            # Use gemini-1.5-flash for higher stability on production
+            # Relax safety settings to prevent false positives from blocking feedback
+            safety_settings = [
+                {"category": "HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+            ]
+
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-1.5-flash",
                 contents=prompt,
                 config={
-                    "temperature": 0.3,
-                    "response_mime_type": "application/json"
+                    "temperature": 0.2,
+                    "response_mime_type": "application/json",
+                    "safety_settings": safety_settings
                 }
             )
             
-            # The SDK handles the response parsing
-            if not response or not hasattr(response, 'text'):
-                logger.error(f"Gemini Response structure unexpected: {type(response)}")
-                raise ValueError("Invalid response from Gemini")
+            # Robust extraction of text
+            text_content = ""
+            if hasattr(response, 'text') and response.text:
+                text_content = response.text
+            elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+                # Fallback to manual extraction if .text is restricted
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    text_content = candidate.content.parts[0].text
+            
+            if not text_content:
+                logger.error(f"Gemini returned empty content. Response: {response}")
+                raise ValueError("Empty response from Gemini")
                 
-            return json.loads(response.text)
+            return json.loads(text_content)
         except Exception as e:
             logger.error(f"Gemini SDK Error: {str(e)}")
-            # If it's the 'candidates' error, it might be due to a blocked response or legacy SDK behavior
             if 'candidates' in str(e):
-                logger.error("Gemini 'candidates' error often means the safety filters blocked the response or the SDK version is mismatched.")
+                logger.error("Gemini 'candidates' error typically means safety filters blocked the response.")
             raise ValueError(f"Gemini API error: {str(e)}")
 
     async def _call_openai_stage2(self, prompt: str) -> Dict[str, Any]:
