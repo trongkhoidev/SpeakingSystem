@@ -41,12 +41,15 @@ class GatekeeperService:
         # If Gemini is known to be problematic/blocked, skip to LLM reasoning directly
         # For now, we try embeddings but catch the specific 403/404 errors
         try:
-            model = 'text-embedding-004' # Using latest embedding model
+            model = 'text-embedding-004' 
             
-            # Use synchronous embedding call as the SDK doesn't seem to have a simple async one 
-            # for embeddings yet in the same way, or we can use run_in_executor if needed.
-            # However, for simplicity and since it's a single call:
-            q_res = self.client.models.embed_content(model=model, contents=question)
+            try:
+                q_res = self.client.models.embed_content(model=model, contents=question)
+            except Exception as e:
+                logger.warning(f"Embedding with {model} failed, falling back to embedding-001: {str(e)}")
+                model = 'embedding-001'
+                q_res = self.client.models.embed_content(model=model, contents=question)
+                
             a_res = self.client.models.embed_content(model=model, contents=transcript)
             
             q_emb = q_res.embeddings[0].values

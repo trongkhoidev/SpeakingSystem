@@ -250,9 +250,16 @@ class LLMService:
             )
             
             # The SDK handles the response parsing
+            if not response or not hasattr(response, 'text'):
+                logger.error(f"Gemini Response structure unexpected: {type(response)}")
+                raise ValueError("Invalid response from Gemini")
+                
             return json.loads(response.text)
         except Exception as e:
             logger.error(f"Gemini SDK Error: {str(e)}")
+            # If it's the 'candidates' error, it might be due to a blocked response or legacy SDK behavior
+            if 'candidates' in str(e):
+                logger.error("Gemini 'candidates' error often means the safety filters blocked the response or the SDK version is mismatched.")
             raise ValueError(f"Gemini API error: {str(e)}")
 
     async def _call_openai_stage2(self, prompt: str) -> Dict[str, Any]:

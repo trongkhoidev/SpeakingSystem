@@ -76,9 +76,13 @@ class AzureService:
             pronunciation_config = PronunciationAssessmentConfig(
                 reference_text=reference_text,
                 grading_system=PronunciationAssessmentGradingSystem.HundredMark,
-                granularity=PronunciationAssessmentGranularity.Phoneme,
-                enable_prosody=True
+                granularity=PronunciationAssessmentGranularity.Phoneme
             )
+            # enable_prosody is supported in later versions but might not be in the constructor
+            try:
+                setattr(pronunciation_config, 'enable_prosody', True)
+            except:
+                pass
             
             recognizer = SpeechRecognizer(speech_config=speech_config, audio_config=audio_config, language=language)
             pronunciation_config.apply_to(recognizer)
