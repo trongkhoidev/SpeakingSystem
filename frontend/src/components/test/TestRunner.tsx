@@ -65,6 +65,7 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   const [isLowTime, setIsLowTime] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [pendingAssessments, setPendingAssessments] = useState(0);
+  const [extendCount, setExtendCount] = useState(0); // Max 2 extends per question
 
   const countdownRef = useRef<any>(null);
   const ttsTimeoutRef = useRef<any>(null);
@@ -190,14 +191,38 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
   // ── Start speaking ──
   const handleStartSpeaking = async () => {
     setTestState('USER_SPEAKING');
+    setExtendCount(0);
     const dur = currentQuestion.part === 1 ? 45 : currentQuestion.part === 2 ? 120 : 60;
     startTimer(dur);
-    // Auto-start recording
     try {
       await startRecording();
     } catch (e) {
       console.error('Failed to start recording:', e);
     }
+  };
+
+  // ── Extend time (+30s or +60s) ──
+  const extendTime = (extra: number) => {
+    if (extendCount >= 2) return; // Max 2 extends
+    setExtendCount(prev => prev + 1);
+    setCountdown(prev => prev + extra);
+    setIsLowTime(false);
+  };
+
+  // ── Skip question ──
+  const skipQuestion = () => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    if (isRecording) stopRecording(); // This won't trigger handleRecordingDone since we transition first
+    setTestState('NEXT_TRANSITION');
+    setTimeout(() => {
+      if (idx < questions.length - 1) {
+        setIdx(prev => prev + 1);
+        setTestState('READING_QUESTION');
+        resetTranscript();
+      } else {
+        setTestState('ANALYZING');
+      }
+    }, 1000);
   };
 
   // ── Finalize ──
@@ -211,19 +236,36 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
     }
   }, [testState, pendingAssessments, sessionId, onComplete]);
 
-  // ── Keyboard: Space ──
+  // ── Keyboard shortcuts ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return;
       const tag = (document.activeElement?.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
-      e.preventDefault();
 
-      if (testState === 'READY_TO_ANSWER') handleStartSpeaking();
-      else if (testState === 'USER_SPEAKING' && isRecording) stopRecording();
-      else if (testState === 'PART2_PREP') {
-        if (countdownRef.current) clearInterval(countdownRef.current);
-        handleStartSpeaking();
+      // Space: Start/Stop recording
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (testState === 'READY_TO_ANSWER') handleStartSpeaking();
+        else if (testState === 'USER_SPEAKING' && isRecording) stopRecording();
+        else if (testState === 'PART2_PREP') {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          handleStartSpeaking();
+        }
+      }
+      // T: +30s
+      if (e.code === 'KeyT' && testState === 'USER_SPEAKING') {
+        e.preventDefault();
+        extendTime(30);
+      }
+      // Y: +60s
+      if (e.code === 'KeyY' && testState === 'USER_SPEAKING') {
+        e.preventDefault();
+        extendTime(60);
+      }
+      // S: Skip question
+      if (e.code === 'KeyS' && (testState === 'READY_TO_ANSWER' || testState === 'USER_SPEAKING' || testState === 'READING_QUESTION')) {
+        e.preventDefault();
+        skipQuestion();
       }
     };
     window.addEventListener('keydown', handler);
@@ -298,13 +340,28 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
               <Mic style={{ width: 40, height: 40 }} />
             </button>
             <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '8px 20px', borderRadius: 20, background: '#F1F5F9'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+              marginTop: 8
             }}>
-              <Keyboard style={{ width: 14, height: 14, color: '#94A3B8' }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>
-                Nhấn <kbd style={{ fontFamily: 'monospace', background: '#fff', border: '1px solid #D1D5DB', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>SPACE</kbd> để bắt đầu
-              </span>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '8px 20px', borderRadius: 20, background: '#F1F5F9'
+              }}>
+                <Keyboard style={{ width: 14, height: 14, color: '#94A3B8' }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#64748B' }}>
+                  Nhấn <kbd style={{ fontFamily: 'monospace', background: '#fff', border: '1px solid #D1D5DB', borderRadius: 4, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>SPACE</kbd> để bắt đầu
+                </span>
+              </div>
+              <button
+                onClick={skipQuestion}
+                style={{
+                  padding: '8px 20px', borderRadius: 20, background: '#FFF1F2',
+                  border: '1px solid #FECACA', color: '#DC2626', fontSize: 12,
+                  fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+                }}
+              >
+                Bỏ qua (S)
+              </button>
             </div>
           </div>
         )}
@@ -370,11 +427,52 @@ export function TestRunner({ sessionId, config, questions, onComplete }: TestRun
             <div style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 600, marginBottom: 16 }}>
               {isRecording ? `🔴 Đang ghi âm — ${formatDuration(duration)}` : 'Đang khởi tạo mic...'}
             </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 16, background: '#F1F5F9', marginBottom: 16 }}>
-              <Keyboard style={{ width: 12, height: 12, color: '#94A3B8' }} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>
-                Nhấn <kbd style={{ fontFamily: 'monospace', background: '#fff', border: '1px solid #D1D5DB', borderRadius: 3, padding: '0 4px', fontSize: 10 }}>SPACE</kbd> để dừng
-              </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 16, background: '#F1F5F9' }}>
+                <Keyboard style={{ width: 12, height: 12, color: '#94A3B8' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>
+                  <kbd style={{ fontFamily: 'monospace', background: '#fff', border: '1px solid #D1D5DB', borderRadius: 3, padding: '0 4px', fontSize: 10 }}>SPACE</kbd> dừng
+                </span>
+              </div>
+              
+              <button 
+                onClick={() => extendTime(30)}
+                disabled={extendCount >= 2}
+                style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', 
+                  borderRadius: 16, background: extendCount >= 2 ? '#F3F4F6' : '#EFF6FF', 
+                  border: `1px solid ${extendCount >= 2 ? '#E5E7EB' : '#BFDBFE'}`,
+                  color: extendCount >= 2 ? '#9CA3AF' : '#2563EB',
+                  fontSize: 11, fontWeight: 700, cursor: extendCount >= 2 ? 'not-allowed' : 'pointer'
+                }}
+              >
+                +30s (T)
+              </button>
+
+              <button 
+                onClick={() => extendTime(60)}
+                disabled={extendCount >= 2}
+                style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', 
+                  borderRadius: 16, background: extendCount >= 2 ? '#F3F4F6' : '#EFF6FF', 
+                  border: `1px solid ${extendCount >= 2 ? '#E5E7EB' : '#BFDBFE'}`,
+                  color: extendCount >= 2 ? '#9CA3AF' : '#2563EB',
+                  fontSize: 11, fontWeight: 700, cursor: extendCount >= 2 ? 'not-allowed' : 'pointer'
+                }}
+              >
+                +60s (Y)
+              </button>
+
+              <button 
+                onClick={skipQuestion}
+                style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', 
+                  borderRadius: 16, background: '#FFF1F2', border: '1px solid #FECACA',
+                  color: '#DC2626', fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                Bỏ qua (S)
+              </button>
             </div>
 
             {/* Live Transcript */}

@@ -118,6 +118,35 @@ export const TestFeedbackPanel: React.FC<TestFeedbackPanelProps> = ({
               ))}
             </div>
           </div>
+
+          {/* New Section: Content & Semantic Errors */}
+          {(feedback.content_errors || feedback.thought_process) && (
+            <div className="space-y-6">
+              {feedback.content_errors && (
+                <div className="bg-rose-50 border border-rose-100 rounded-[2rem] p-8 space-y-4">
+                  <h3 className="text-[10px] font-black text-rose-900 uppercase tracking-widest flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Lỗi nội dung & Ngữ nghĩa
+                  </h3>
+                  <p className="text-[14px] text-rose-800 font-medium leading-relaxed">
+                    {feedback.content_errors}
+                  </p>
+                </div>
+              )}
+
+              {feedback.thought_process && (
+                <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-8 space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    Phân tích từ Giám khảo (Overall Reasoning)
+                  </h3>
+                  <div className="text-[14px] text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">
+                    {feedback.thought_process}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN: AI Analysis */}

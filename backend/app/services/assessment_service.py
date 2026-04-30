@@ -253,6 +253,7 @@ class AssessmentService:
             overall_band=overall_band,
             color_coded_transcript=colored_tokens,
             thought_process=feedback_json.get("thought_process"),
+            content_errors=feedback_json.get("content_errors"),
             upgrader=feedback_json.get("upgrader"),
             audio_url=audio_url
         )

@@ -22,6 +22,7 @@ import {
   HelpCircle,
   Star
 } from 'lucide-react';
+import { TestFeedbackPanel } from '../components/test/TestFeedbackPanel';
 import api from '../lib/api';
 import { GoogleLoginButton } from '../components/auth/GoogleLoginButton';
 import { AudioRecorder } from '../components/audio/AudioRecorder';
@@ -561,249 +562,51 @@ export function PracticeModePage() {
 
                     <AnimatePresence>
                       {isRecording && liveTranscript && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          className="w-full max-w-lg px-6 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-center mt-4"
-                        >
-                          <p className="text-[17px] leading-relaxed font-semibold text-slate-700 italic">
-                            "{liveTranscript}"
-                          </p>
-                        </motion.div>
+                        <div className="w-full max-w-lg px-6 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-center mt-4">
+                           <p className="text-[17px] leading-relaxed font-semibold text-slate-700 italic">
+                             "{liveTranscript}"
+                           </p>
+                        </div>
                       )}
                     </AnimatePresence>
                   </div>
                 ) : (
-                  <div className="w-full flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-500 text-left mt-8">
-                    {q.feedback?.is_relevant === false && (
-                      <div className="bg-amber-50 border-2 border-amber-200 rounded-[2.5rem] p-10 text-center space-y-6">
-                        <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-600">
-                          <AlertCircle className="w-10 h-10" />
-                        </div>
-                        <div className="space-y-3">
-                          <h3 className="text-2xl font-black text-amber-900">Nội dung lạc đề! (Relevance: {q.feedback.relevance_score}%)</h3>
-                          <p className="text-[15px] text-amber-800 font-medium max-w-lg mx-auto leading-relaxed">
-                            Câu trả lời của bạn dường như không liên quan đến chủ đề của câu hỏi. Hệ thống đã tạm dừng đánh giá chuyên sâu để tiết kiệm tài nguyên. Hãy thử trả lời lại tập trung vào chủ đề hơn nhé!
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setQuestions(prev => prev.map((item, idx) => idx === activeIndex ? { ...item, status: 'pending' } : item))}
-                          className="px-10 py-5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest transition-all shadow-lg shadow-amber-200 active:scale-95"
-                        >
-                          Thử lại ngay
-                        </button>
-                      </div>
-                    )}
-
-                    {/* TOP PART: Horizontal Comparison */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                      {/* LEFT COLUMN: Transcript & Azure Pronunciation */}
-                      <div className="space-y-6">
-                        <div className={cn(
-                          "bg-white p-6 rounded-[2rem] shadow-sm relative overflow-hidden",
-                          q.feedback?.is_relevant === false && "opacity-50 pointer-events-none grayscale"
-                        )}>
-                          <h3 className="text-[10px] font-black text-blue-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                            <History className="w-3.5 h-3.5" />
-                            Bản ghi bài nói & Phát âm
-                          </h3>
-                          <div className="p-6 bg-slate-50/50 rounded-2xl flex flex-wrap gap-x-2 gap-y-2 mb-6">
-                            {q.feedback?.color_coded_transcript ? (
-                              q.feedback.color_coded_transcript.map((word: any, i: number) => (
-                                <div key={i} className="flex flex-col items-center min-w-[40px] py-1">
-                                  <span
-                                    className={cn(
-                                      "text-[18px] font-bold transition-all",
-                                      word.color === 'green' ? "text-emerald-600" :
-                                        word.color === 'red' ? "text-rose-600 underline decoration-2" :
-                                          "text-amber-600"
-                                    )}
-                                  >
-                                    {word.word}
-                                  </span>
-                                  <span className="text-[10px] font-medium text-slate-400 font-mono mt-1 tracking-tighter">
-                                    {word.phonemes?.map((p: any) => p.phoneme).join('') || '...'}
-                                  </span>
-                                </div>
-                              ))
+                  <div className="mt-8">
+                    <TestFeedbackPanel
+                      feedback={{
+                        ...q.feedback,
+                        overall_band: q.overall_band,
+                        thought_process: q.feedback.thought_process,
+                        content_errors: q.feedback.content_errors
+                      }}
+                      questionText={q.question_text}
+                      footer={(
+                        <div className="flex items-center justify-end gap-4">
+                          <button
+                            onClick={() => setQuestions(prev => prev.map((item, idx) => idx === activeIndex ? { ...item, status: 'pending' } : item))}
+                            className="px-8 py-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-black text-[12px] uppercase tracking-widest transition-all active:scale-95"
+                          >
+                            Luyện tập lại
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (activeIndex < questions.length - 1) setActiveIndex(prev => prev + 1);
+                              else setView('finish');
+                            }}
+                            className="px-8 py-3 bg-blue-900 text-white rounded-xl font-black text-[12px] uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2"
+                          >
+                            {activeIndex < questions.length - 1 ? (
+                              <>
+                                Câu tiếp theo
+                                <ChevronRight className="w-4 h-4" />
+                              </>
                             ) : (
-                              <p className="text-[16px] text-slate-700 font-medium leading-relaxed italic opacity-50">
-                                {q.feedback?.student_transcript || 'Không có bản ghi nhận diện nào.'}
-                              </p>
+                              'Hoàn tất buổi học'
                             )}
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl">
-                            {[
-                              { label: 'Accuracy', val: q.feedback?.azure_pronunciation?.accuracy_score, color: 'emerald' },
-                              { label: 'Fluency', val: q.feedback?.azure_pronunciation?.fluency_score, color: 'blue' },
-                              { label: 'Prosody', val: q.feedback?.azure_pronunciation?.prosody_score, color: 'purple' }
-                            ].map(m => (
-                              <div key={m.label} className="text-center">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{m.label}</p>
-                                <p className={cn("text-[18px] font-black", `text-${m.color}-600`)}>{m.val ?? 0}%</p>
-                                <div className="w-full h-1 bg-white rounded-full mt-1">
-                                  <div className={cn("h-full rounded-full transition-all duration-1000", `bg-${m.color}-500`)} style={{ width: `${m.val || 0}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          </button>
                         </div>
-                      </div>
-
-                      {/* RIGHT COLUMN: AI Analysis (3 Criteria) */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between px-4">
-                          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                            Đánh giá chi tiết (FC, LR, GRA)
-                          </h3>
-                          <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Overall</span>
-                            <span className="text-[16px] font-black text-blue-600 leading-none">{q.overall_band?.toFixed(1) || '0.0'}</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-6">
-                          {['FC', 'LR', 'GRA'].map((cat) => (
-                            <div key={cat} className="p-6 bg-white rounded-[1.5rem] shadow-sm border border-slate-50 space-y-4 hover:shadow-md transition-shadow">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className={cn(
-                                    "w-8 h-8 rounded-xl flex items-center justify-center text-[11px] text-white font-black shadow-lg",
-                                    cat === 'FC' ? "bg-blue-600 shadow-blue-100" : cat === 'LR' ? "bg-purple-600 shadow-purple-100" : "bg-orange-600 shadow-orange-100"
-                                  )}>{cat}</div>
-                                  <span className="text-[12px] font-black uppercase tracking-widest text-slate-900">
-                                    {cat === 'FC' ? 'Mạch lạc & Trôi chảy' : cat === 'LR' ? 'Vốn từ vựng' : 'Ngữ pháp'}
-                                  </span>
-                                </div>
-                                <span className="text-[14px] font-black text-slate-900">{q.feedback?.band_scores?.[cat]?.toFixed(1) || '0.0'}</span>
-                              </div>
-
-                              <div className="space-y-3">
-                                <p className="text-[13px] text-slate-600 leading-relaxed font-medium line-clamp-3">
-                                  {q.feedback?.feedback_json?.[cat]?.reasoning || q.feedback?.feedback_json?.[cat]?.feedback || 'Đang cập nhật phân tích...'}
-                                </p>
-
-                                {(q.feedback?.feedback_json?.[cat]?.solution || q.feedback?.[cat]?.solution) && (
-                                  <div className="flex items-start gap-2 text-[12px] text-emerald-700 font-bold">
-                                    <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                                    <span>{q.feedback?.feedback_json?.[cat]?.solution || q.feedback?.[cat]?.solution}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* BOTTOM PART: Suggested Sample Answer & Upgrades */}
-                    {q.feedback?.upgrader && (
-                      <div className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-8 rounded-[2.5rem] shadow-xl shadow-blue-500/5 space-y-8 animate-in slide-in-from-bottom duration-700">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <h3 className="text-[13px] font-black text-blue-900 uppercase tracking-widest flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white">
-                                <Sparkles className="w-4 h-4" />
-                              </div>
-                              Gợi ý trả lời Band {q.feedback.upgrader.target_band || '8.0'}+
-                            </h3>
-                            <p className="text-[11px] text-blue-600/60 font-bold uppercase tracking-widest ml-11">Nâng cấp từ bài nói của bạn (+1.0 Band)</p>
-                          </div>
-                          <div className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
-                            Next Level Sample
-                          </div>
-                        </div>
-
-                        <div className="relative group">
-                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                          <div className="relative bg-white p-8 rounded-3xl shadow-sm leading-relaxed">
-                            <p className="text-[18px] md:text-[20px] text-slate-800 font-bold font-serif italic">
-                              "{q.feedback.upgrader.improved_sample_answer}"
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-8">
-                          {q.feedback.upgrader.topic_vocabulary?.length > 0 && (
-                            <div className="space-y-4">
-                              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
-                                Từ vựng chủ đề (Topic Vocabulary):
-                              </p>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {q.feedback.upgrader.topic_vocabulary.map((v: any, i: number) => (
-                                  <div key={i} className="bg-white/80 p-4 rounded-2xl hover:bg-white transition-all border border-slate-50 group">
-                                    <p className="text-[14px] font-black text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{v.phrase}</p>
-                                    <p className="text-[12px] text-slate-600 font-bold">{v.meaning}</p>
-                                    <p className="text-[10px] text-slate-400 mt-1 italic leading-relaxed">{v.usage}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {(q.feedback.upgrader.collocations?.length > 0 || q.feedback.upgrader.idioms?.length > 0) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {q.feedback.upgrader.collocations?.length > 0 && (
-                                <div className="space-y-4">
-                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 bg-purple-600 rounded-full" />
-                                    Collocations (Cụm từ hay):
-                                  </p>
-                                  <div className="space-y-3">
-                                    {q.feedback.upgrader.collocations.map((c: any, i: number) => (
-                                      <div key={i} className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-slate-50">
-                                        <span className="text-[13px] font-bold text-slate-900">{c.phrase}</span>
-                                        <span className="text-[11px] text-slate-500">{c.meaning}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {q.feedback.upgrader.idioms?.length > 0 && (
-                                <div className="space-y-4">
-                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 bg-orange-600 rounded-full" />
-                                    Idioms (Thành ngữ):
-                                  </p>
-                                  <div className="space-y-3">
-                                    {q.feedback.upgrader.idioms.map((idm: any, i: number) => (
-                                      <div key={i} className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-slate-50">
-                                        <span className="text-[13px] font-bold text-slate-900">{idm.phrase}</span>
-                                        <span className="text-[11px] text-slate-500">{idm.meaning}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-4">
-                      <button
-                        onClick={() => setQuestions(prev => prev.map((item, idx) => idx === activeIndex ? { ...item, status: 'pending' } : item))}
-                        className="px-8 py-3 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-black text-[12px] uppercase tracking-widest transition-all active:scale-95"
-                      >
-                        Luyện tập lại
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (activeIndex < questions.length - 1) setActiveIndex(prev => prev + 1);
-                          else setView('finish');
-                        }}
-                        className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-[12px] uppercase tracking-widest shadow-lg shadow-blue-100 transition-all active:scale-95 flex items-center gap-3"
-                      >
-                        {activeIndex < questions.length - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
+                      )}
+                    />
                   </div>
                 )}
               </div>

@@ -98,24 +98,38 @@ class LLMService:
     ) -> Dict[str, Any]:
         """Stage 2: Comprehensive IELTS Assessment."""
         
-        # IELTS Knowledge Base (Token-Optimized)
-        band_descriptors = """
-        - FC: 9 (Fluent, integrated), 7 (Lengthy, discourse markers), 5 (Repetitive, basic).
-        - LR: 9 (Precise, idiomatic), 7 (Less common items), 5 (Limited range).
-        - GRA: 9 (Flexible, accurate), 7 (Complex structures), 5 (Basic forms, errors).
+        # IELTS Knowledge Base (Detailed Band Descriptors)
+        band_descriptors_detailed = """
+        IELTS SPEAKING BAND DESCRIPTORS (Summary):
+        - Fluency & Coherence (FC):
+          9: Speaks fluently with only rare repetition; content is fully developed.
+          7: Speaks at length without effort; uses range of connectives/markers.
+          5: Maintains flow but uses repetition/self-correction; over-uses certain markers.
+        - Lexical Resource (LR):
+          9: Uses vocabulary with full flexibility and precision; idiomatic.
+          7: Uses less common and idiomatic vocabulary; shows some style/collocation.
+          5: Manages to talk about familiar topics; limited range for unfamiliar ones.
+        - Grammatical Range & Accuracy (GRA):
+          9: Uses full range of structures naturally and appropriately; rare errors.
+          7: Uses a range of complex structures; frequently error-free.
+          5: Produces basic sentence forms with reasonable accuracy; limited range.
         """
+
         prompt = f"""
-        System: You are a Senior IELTS Examiner. Use the following Band Descriptors: {band_descriptors}
+        System: You are a STRICT and UNBIASED Senior IELTS Examiner. Your goal is to provide a transparent, accurate, and professional assessment. 
+        DO NOT default to Band 5.0. If the student performs poorly, give 4.0 or lower. If they perform exceptionally, give 8.0+.
         
+        {band_descriptors_detailed}
+
         Evaluation Strategy:
-        1. Be SHARP and SPECIFIC. Avoid generic feedback.
-        2. When guiding answer development (in the "solution" fields), apply the WHY-WHAT-HOW-WHEN-WHO framework.
-        3. Identify the current band level of the response.
-        4. Provide an "improved_sample_answer" that is approximately 1.0 band higher than the current level (e.g., if user is 5.0, target 6.0+).
-        5. The sample answer must be professional, natural, and demonstrate exactly how to move to the next level.
+        1. BE RIGOROUS: Analyze every word. Identify pauses, repetitions, and filler words.
+        2. CONTENT MATTERS: Check if the answer actually makes sense and addresses the question. Point out semantic errors (sai lệch ngữ nghĩa) or logical gaps.
+        3. TRANSPARENCY: In the "reasoning" fields (VIETNAMESE), you MUST mention specific criteria from the band descriptors above to justify the score.
+        4. FEEDBACK DEPTH: Explain EXACTLY why the user is at their current band. E.g., "Bạn đạt 5.0 vì lặp từ 'think' 4 lần và không dùng được câu phức nào."
+        5. UPGRADER: Provide an "improved_sample_answer" that is approximately 1.5 bands higher. The sample answer must be natural and demonstrate high-level collocations.
         
         LANGUAGE RULES:
-        - Evaluation fields ("thought_process", "reasoning"): Use VIETNAMESE to explain the scores and identify errors.
+        - Evaluation fields ("thought_process", "reasoning", "content_errors"): Use VIETNAMESE.
         - Suggestion/Instruction fields ("solution", "overall_advice", "usage"): Use ENGLISH.
         - Sample Answer field ("improved_sample_answer"): Use ENGLISH.
         - Dictionary fields ("meaning"): Use VIETNAMESE.
@@ -124,30 +138,31 @@ class LLMService:
         
         Output JSON ONLY:
         {{
-            "thought_process": "Phân tích chi tiết lỗi sai và điểm mạnh (Tiếng Việt).",
+            "thought_process": "Phân tích tổng quan về phong độ, lỗi nội dung và tiềm năng (Tiếng Việt).",
+            "content_errors": "Chỉ ra các lỗi sai về mặt nội dung, logic hoặc dùng sai từ làm lệch ngữ nghĩa (Tiếng Việt).",
             "FC": {{ 
                 "score": <float>, 
-                "reasoning": "Tại sao đạt điểm này? (Tiếng Việt)", 
-                "solution": "Detailed instructions on how to develop the answer using WHY-WHAT-HOW (English)"
+                "reasoning": "Dẫn chứng cụ thể từ bài nói so với band descriptors (Tiếng Việt).", 
+                "solution": "Specific techniques to improve fluency (English)."
             }},
             "LR": {{ 
                 "score": <float>, 
-                "reasoning": "Phân tích từ vựng (Tiếng Việt)", 
-                "solution": "Suggestions for expanding vocabulary range and precision (English)"
+                "reasoning": "Phân tích độ rộng và độ chính xác của từ vựng (Tiếng Việt).", 
+                "solution": "Key vocabulary areas to focus on (English)."
             }},
             "GRA": {{ 
                 "score": <float>, 
-                "reasoning": "Phân tích ngữ pháp (Tiếng Việt)", 
-                "solution": "Suggestions for using more complex structures and improving accuracy (English)"
+                "reasoning": "Phân tích cấu trúc câu và lỗi sai (Tiếng Việt).", 
+                "solution": "Grammar structures to master for the next level (English)."
             }},
             "upgrader": {{
                 "target_band": <float>,
                 "topic_vocabulary": [{{ "phrase": "English Phrase", "meaning": "Nghĩa tiếng Việt", "usage": "English usage example" }}],
                 "collocations": [{{ "phrase": "English Collocation", "meaning": "Nghĩa tiếng Việt" }}],
                 "idioms": [{{ "phrase": "English Idiom", "meaning": "Nghĩa tiếng Việt" }}],
-                "improved_sample_answer": "A professional and natural IELTS response at the target band level (English)"
+                "improved_sample_answer": "A high-level professional response (English)."
             }},
-            "overall_advice": "General advice for improvement (English)"
+            "overall_advice": "Clear roadmap for the student (English)"
         }}
         """
 

@@ -28,6 +28,8 @@ interface QuestionResult {
   word_details: any;
   azure_pronunciation: any;
   feedback_json: any;
+  thought_process?: string;
+  content_errors?: string;
 }
 
 interface TestReportProps {

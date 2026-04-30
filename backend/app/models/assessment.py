@@ -81,6 +81,7 @@ class IELTSAssessmentResult(BaseModel):
     
     # New IELTS 2026 Fields
     thought_process: Optional[str] = None
+    content_errors: Optional[str] = None
     upgrader: Optional[Dict[str, Any]] = None
     
     # UI Helpers
