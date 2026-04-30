@@ -234,23 +234,28 @@ class LLMService:
         return GrammarAnalysis(**res)
 
     async def _call_gemini_stage2(self, prompt: str) -> Dict[str, Any]:
-        """Call Google Gemini using official SDK with safety settings and fallbacks."""
+        """Call Google Gemini with multiple model fallbacks and OpenAI backup."""
         if not self.client:
             raise ValueError("GEMINI_API_KEY is not configured")
 
-        try:
-            # Use gemini-1.5-flash for higher stability on production
-            # Relax safety settings using correct HARM_CATEGORY prefix
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-            ]
+        # List of models to try in order (confirmed live via ListModels as of 2026-04)
+        models_to_try = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest"]
+        last_error = None
 
+        for model_name in models_to_try:
             try:
-                response = self.client.models.generate_content(
-                    model="gemini-1.5-flash",
+                logger.info(f"Attempting Stage 2 Analysis with model: {model_name}")
+                safety_settings = [
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+                ]
+
+                # generate_content is synchronous — run in executor to avoid blocking the event loop
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model=model_name,
                     contents=prompt,
                     config={
                         "temperature": 0.2,
@@ -258,38 +263,33 @@ class LLMService:
                         "safety_settings": safety_settings
                     }
                 )
-            except Exception as safety_err:
-                logger.warning(f"Gemini with safety settings failed, retrying without them: {str(safety_err)}")
-                # Fallback: try without safety settings if the categories are still problematic
-                response = self.client.models.generate_content(
-                    model="gemini-1.5-flash",
-                    contents=prompt,
-                    config={
-                        "temperature": 0.2,
-                        "response_mime_type": "application/json"
-                    }
-                )
-            
-            # Robust extraction of text
-            text_content = ""
-            if hasattr(response, 'text') and response.text:
-                text_content = response.text
-            elif hasattr(response, 'candidates') and len(response.candidates) > 0:
-                # Fallback to manual extraction if .text is restricted
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
-                    text_content = candidate.content.parts[0].text
-            
-            if not text_content:
-                logger.error(f"Gemini returned empty content. Response: {response}")
-                raise ValueError("Empty response from Gemini")
                 
-            return json.loads(text_content)
-        except Exception as e:
-            logger.error(f"Gemini SDK Error: {str(e)}")
-            if 'candidates' in str(e):
-                logger.error("Gemini 'candidates' error typically means safety filters blocked the response.")
-            raise ValueError(f"Gemini API error: {str(e)}")
+                text_content = ""
+                if hasattr(response, 'text') and response.text:
+                    text_content = response.text
+                elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+                    candidate = response.candidates[0]
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        text_content = candidate.content.parts[0].text
+                
+                if text_content:
+                    return json.loads(text_content)
+                    
+            except Exception as e:
+                logger.warning(f"Model {model_name} failed: {str(e)}")
+                last_error = e
+                # If it's a 429 or 404, we try the next model in the loop
+                continue
+
+        # If all Gemini models failed, try OpenAI as a ultimate fallback
+        if self.openai_key:
+            try:
+                logger.info("All Gemini models failed. Falling back to OpenAI (GPT-4o-mini)...")
+                return await self._call_openai_stage2(prompt)
+            except Exception as oa_err:
+                logger.error(f"OpenAI fallback also failed: {str(oa_err)}")
+        
+        raise ValueError(f"All AI providers failed. Last error: {str(last_error)}")
 
     async def _call_openai_stage2(self, prompt: str) -> Dict[str, Any]:
         """Call OpenAI GPT using official SDK for consistency."""

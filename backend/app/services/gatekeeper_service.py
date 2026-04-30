@@ -40,14 +40,17 @@ class GatekeeperService:
 
         # If Gemini is known to be problematic/blocked, skip to LLM reasoning directly
         # For now, we try embeddings but catch the specific 403/404 errors
+        # Embedding model priority: gemini-embedding-001 (stable) → gemini-embedding-2 (newer)
+        EMBEDDING_MODELS = ['models/gemini-embedding-001', 'models/gemini-embedding-2']
+
         try:
-            model = 'text-embedding-004' 
+            model = EMBEDDING_MODELS[0]
             
             try:
                 q_res = self.client.models.embed_content(model=model, contents=question)
             except Exception as e:
-                logger.warning(f"Embedding with {model} failed, falling back to embedding-001: {str(e)}")
-                model = 'embedding-001'
+                logger.warning(f"Embedding with {model} failed, falling back to {EMBEDDING_MODELS[1]}: {str(e)}")
+                model = EMBEDDING_MODELS[1]
                 q_res = self.client.models.embed_content(model=model, contents=question)
                 
             a_res = self.client.models.embed_content(model=model, contents=transcript)

@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     DB_NAME: str = os.getenv("DB_NAME", "")
     DB_USER: str = os.getenv("DB_USER", "")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
-    DB_DRIVER: str = os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server")
+    DB_DRIVER: str = os.getenv("DB_DRIVER", "ODBC Driver 18 for SQL Server")
     
     @property
     def DATABASE_URL(self) -> str:
