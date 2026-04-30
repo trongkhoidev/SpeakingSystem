@@ -73,13 +73,25 @@ class Settings(BaseSettings):
     AUDIO_STORAGE_BUCKET: str = os.getenv("AUDIO_STORAGE_BUCKET", "audio-recordings")
     
     # CORS
-    CORS_ORIGINS: list = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "https://speakingsystem-production-ec7b.up.railway.app",
-        os.getenv("FRONTEND_URL", "https://speakingsystem-production-ec7b.up.railway.app"),
-    ]
+    @property
+    def CORS_ORIGINS(self) -> list[str]:
+        origins = [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:8080",
+            "https://speakingsystem-production-ec7b.up.railway.app",
+        ]
+        
+        env_frontend = os.getenv("FRONTEND_URL")
+        if env_frontend:
+            origins.append(env_frontend)
+            # Add version without trailing slash if present
+            if env_frontend.endswith("/"):
+                origins.append(env_frontend[:-1])
+            else:
+                origins.append(f"{env_frontend}/")
+        
+        return list(set(origins))  # Remove duplicates
 
 
 settings = Settings()
