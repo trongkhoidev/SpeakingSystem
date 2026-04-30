@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronRight, Calendar, Award,
   Zap, FileText, TrendingUp, History, ArrowRight,
@@ -71,6 +72,8 @@ interface ExamSet {
 type ExamModeId = 'full' | 'part1' | 'part2' | 'part3';
 
 export function TestExamPage() {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
   const [history, setHistory]               = useState<TestHistoryItem[]>([]);
   const [loading, setLoading]               = useState(true);
   const [isSetupOpen, setIsSetupOpen]       = useState(false);
@@ -85,6 +88,13 @@ export function TestExamPage() {
   const [selectedExamSetId, setSelectedExamSetId] = useState<string | null>(null);
   const [testMode, setTestMode]             = useState<'sets' | 'random'>('sets');
   const [isStartingTest, setIsStartingTest] = useState(false);
+
+  // Sync session with URL
+  useEffect(() => {
+    if (activeSession && activeSession.id !== sessionId) {
+      navigate(`/test/${activeSession.id}`, { replace: true });
+    }
+  }, [activeSession, sessionId, navigate]);
 
 
   const fetchHistory = async () => {

@@ -6,7 +6,8 @@ import {
   Settings,
   ShieldCheck,
   TrendingUp,
-  Star
+  Star,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ const ADMIN_NAV_ITEMS = [
   { to: '/admin/accounts', label: 'Quản lý tài khoản',  icon: Users,           end: false },
   { to: '/admin/tokens',   label: 'Cấp phát Token',    icon: Diamond,         end: false },
   { to: '/admin/plans',    label: 'Quản lý các gói',   icon: Settings,        end: false },
+  { to: '/admin/exam-sets',label: 'Quản lý bộ đề',     icon: FileText,        end: false },
 ];
 
 export function AdminSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, onToggle: () => void }) {

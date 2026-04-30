@@ -336,7 +336,11 @@ def seed_data():
         def get_q_ids(part, topic_name=None, limit=4):
             query = db.query(Question).filter(Question.part == part)
             if topic_name:
-                query = query.join(Topic).filter(Topic.name == topic_name)
+                if part == 2:
+                    # Part 2 questions all share topic "Cue Cards" — match by question_text instead
+                    query = query.filter(Question.question_text == topic_name)
+                else:
+                    query = query.join(Topic).filter(Topic.name == topic_name)
             return [q.id for q in query.limit(limit).all()]
 
         exam_sets_data = [

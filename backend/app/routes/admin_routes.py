@@ -505,3 +505,159 @@ def get_token_allocation_history(
         })
         
     return result
+
+
+# ============ EXAM SET MANAGEMENT ============
+
+@router.get("/exam-sets")
+def list_exam_sets(
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """List all exam sets for admin management."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import ExamSet, Question
+    import json
+    
+    sets = db.query(ExamSet).order_by(ExamSet.name).all()
+    result = []
+    for es in sets:
+        try:
+            q_ids = json.loads(es.question_ids_json)
+        except:
+            q_ids = {"part1": [], "part2": [], "part3": []}
+        
+        # Resolve question texts for preview
+        questions_preview = {}
+        for part_key in ["part1", "part2", "part3"]:
+            ids = q_ids.get(part_key, [])
+            questions = []
+            for qid in ids:
+                q = db.query(Question).filter(Question.id == qid).first()
+                if q:
+                    questions.append({"id": q.id, "text": q.question_text, "part": q.part})
+            questions_preview[part_key] = questions
+        
+        result.append({
+            "id": es.id,
+            "name": es.name,
+            "description": es.description,
+            "estimated_minutes": es.estimated_minutes,
+            "difficulty": es.difficulty,
+            "is_active": es.is_active,
+            "tag": es.tag,
+            "question_ids_json": es.question_ids_json,
+            "questions_preview": questions_preview,
+            "question_counts": {
+                "part1": len(q_ids.get("part1", [])),
+                "part2": len(q_ids.get("part2", [])),
+                "part3": len(q_ids.get("part3", [])),
+            },
+            "created_at": es.created_at
+        })
+    
+    return result
+
+
+@router.post("/exam-sets")
+def create_exam_set(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Create a new exam set."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import ExamSet
+    import json
+    
+    name = payload.get("name")
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    
+    question_ids = payload.get("question_ids", {"part1": [], "part2": [], "part3": []})
+    
+    exam_set = ExamSet(
+        name=name,
+        description=payload.get("description", ""),
+        question_ids_json=json.dumps(question_ids),
+        estimated_minutes=payload.get("estimated_minutes", 14),
+        difficulty=payload.get("difficulty", "medium"),
+        is_active=payload.get("is_active", True),
+        tag=payload.get("tag")
+    )
+    db.add(exam_set)
+    db.commit()
+    db.refresh(exam_set)
+    
+    return {"message": "Exam set created", "id": exam_set.id, "name": exam_set.name}
+
+
+@router.put("/exam-sets/{exam_set_id}")
+def update_exam_set(
+    exam_set_id: str,
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Update an existing exam set."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import ExamSet
+    import json
+    
+    es = db.query(ExamSet).filter(ExamSet.id == exam_set_id).first()
+    if not es:
+        raise HTTPException(status_code=404, detail="Exam set not found")
+    
+    allowed = {"name", "description", "estimated_minutes", "difficulty", "is_active", "tag"}
+    for k, v in payload.items():
+        if k in allowed and v is not None:
+            setattr(es, k, v)
+    
+    if "question_ids" in payload:
+        es.question_ids_json = json.dumps(payload["question_ids"])
+    
+    db.commit()
+    return {"message": "Exam set updated", "id": es.id}
+
+
+@router.delete("/exam-sets/{exam_set_id}")
+def delete_exam_set(
+    exam_set_id: str,
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Delete an exam set."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import ExamSet
+    
+    es = db.query(ExamSet).filter(ExamSet.id == exam_set_id).first()
+    if not es:
+        raise HTTPException(status_code=404, detail="Exam set not found")
+    
+    db.delete(es)
+    db.commit()
+    return {"message": "Exam set deleted", "id": exam_set_id}
+
+
+@router.get("/questions/bank")
+def get_question_bank(
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Get all questions in the bank for admin to pick from when building exam sets."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import Question, Topic
+    
+    questions = db.query(Question).order_by(Question.part, Question.id).all()
+    result = []
+    for q in questions:
+        topic_name = q.topic.name if q.topic else None
+        result.append({
+            "id": q.id,
+            "part": q.part,
+            "question_text": q.question_text,
+            "topic": topic_name,
+            "cue_card_json": q.cue_card_json
+        })
+    return result
+

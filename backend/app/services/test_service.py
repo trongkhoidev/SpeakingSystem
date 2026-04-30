@@ -7,7 +7,7 @@ import uuid
 import json
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import func
+from sqlalchemy import func, text
 from app.services.scoring_service import ScoringService
 
 
@@ -60,14 +60,16 @@ class TestService:
         # If no specific parts, do full test (Smart Random: Cluster P1 + P2 + Linked/Topic P3)
         if not parts:
             # 1. Pick 1 random Part 1 Topic cluster
-            p1_topic = db.query(Topic).filter(Topic.part == 1).order_by(func.random()).first()
+            p1_topic = db.query(Topic).filter(Topic.part == 1).order_by(text('NEWID()')).first()
+            p1 = []
             if p1_topic:
                 p1 = db.query(Question).filter(Question.topic_id == p1_topic.id).all()
-            else:
-                p1 = db.query(Question).filter(Question.part == 1).order_by(func.random()).limit(4).all()
+            
+            if not p1:
+                p1 = db.query(Question).filter(Question.part == 1).order_by(text('NEWID()')).limit(4).all()
 
             # 2. Pick 1 random Part 2 cue card
-            p2 = db.query(Question).filter(Question.part == 2).order_by(func.random()).limit(1).all()
+            p2 = db.query(Question).filter(Question.part == 2).order_by(text('NEWID()')).limit(1).all()
             
             p3 = []
             if p2:
@@ -86,12 +88,15 @@ class TestService:
             
             # Final Fallback: Pure random Part 3
             if len(p3) < 2:
-                p3 = db.query(Question).filter(Question.part == 3).order_by(func.random()).limit(4).all()
+                remaining = 4 - len(p3)
+                if remaining > 0:
+                    fallback_p3 = db.query(Question).filter(Question.part == 3).order_by(text('NEWID()')).limit(remaining).all()
+                    p3.extend(fallback_p3)
                 
             return p1 + p2 + p3
         
         # Single part
-        return db.query(Question).filter(Question.part == parts).order_by(func.random()).limit(question_count).all()
+        return db.query(Question).filter(Question.part == parts).order_by(text('NEWID()')).limit(question_count).all()
 
     @staticmethod
     def complete_session(db: Session, session_id: str) -> Optional[TestSession]:

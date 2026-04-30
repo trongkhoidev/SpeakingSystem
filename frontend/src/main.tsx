@@ -15,6 +15,7 @@ const AdminDashboardPage   = lazy(() => import('./pages/admin/AdminDashboardPage
 const AccountManagementPage = lazy(() => import('./pages/admin/AccountManagementPage').then(m => ({ default: m.AccountManagementPage })));
 const TokenAllocationPage   = lazy(() => import('./pages/admin/TokenAllocationPage').then(m => ({ default: m.TokenAllocationPage })));
 const PlanManagementPage    = lazy(() => import('./pages/admin/PlanManagementPage').then(m => ({ default: m.PlanManagementPage })));
+const ExamSetManagementPage = lazy(() => import('./pages/admin/ExamSetManagementPage').then(m => ({ default: m.ExamSetManagementPage })));
 const PlansPage             = lazy(() => import('./pages/PlansPage').then(m => ({ default: m.PlansPage })));
 const ProfilePage           = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 
@@ -72,6 +73,7 @@ export function App() {
                 <Route path="/admin/accounts" element={<AccountManagementPage />} />
                 <Route path="/admin/tokens"   element={<TokenAllocationPage />} />
                 <Route path="/admin/plans"    element={<PlanManagementPage />} />
+                <Route path="/admin/exam-sets" element={<ExamSetManagementPage />} />
               </Route>
             </Route>
 
