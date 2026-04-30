@@ -123,6 +123,7 @@ class AssessmentService:
                 'accuracy_score': 65.0,
                 'fluency_score': 65.0,
                 'prosody_score': 65.0,
+                'pronunciation_score': 65.0,
                 'completeness_score': 100.0,
                 'words': [],
                 'raw_response': {"error": "Azure Fallback"}
