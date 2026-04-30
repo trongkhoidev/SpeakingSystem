@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from typing import Tuple, Dict, Any
 from scipy.spatial.distance import cosine
-import google.generativeai as genai
+from google import genai
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -22,10 +22,9 @@ class GatekeeperService:
         self.gemini_key = settings.GEMINI_API_KEY
         self.llm_service = LLMService()
         if self.gemini_key:
-            genai.configure(api_key=self.gemini_key)
-            self.initialized = True
+            self.client = genai.Client(api_key=self.gemini_key)
         else:
-            self.initialized = False
+            self.client = None
         
     async def check_relevance(self, question: str, transcript: str) -> Tuple[bool, int]:
         """
@@ -35,7 +34,7 @@ class GatekeeperService:
         if not transcript or len(transcript.strip()) < 10:
             return False, 0
             
-        if not self.initialized:
+        if not self.client:
             logger.warning("Gatekeeper: Gemini client not initialized. Skipping embeddings.")
             return await self._llm_reasoning(question, transcript, 50)
 
@@ -47,11 +46,11 @@ class GatekeeperService:
             # Use synchronous embedding call as the SDK doesn't seem to have a simple async one 
             # for embeddings yet in the same way, or we can use run_in_executor if needed.
             # However, for simplicity and since it's a single call:
-            q_res = genai.embed_content(model=f"models/{model}", content=question, task_type="retrieval_query")
-            a_res = genai.embed_content(model=f"models/{model}", content=transcript, task_type="retrieval_query")
+            q_res = self.client.models.embed_content(model=model, contents=question)
+            a_res = self.client.models.embed_content(model=model, contents=transcript)
             
-            q_emb = q_res['embedding']
-            a_emb = a_res['embedding']
+            q_emb = q_res.embeddings[0].values
+            a_emb = a_res.embeddings[0].values
             
             similarity = 1 - cosine(q_emb, a_emb)
             score = int(similarity * 100)

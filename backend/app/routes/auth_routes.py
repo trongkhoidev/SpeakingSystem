@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
-from authlib.jose import jwt
+from joserfc import jwt
 import httpx
 import logging
 from typing import Any, Dict, Optional
@@ -115,14 +115,20 @@ async def google_login(
                 jwks = resp.json()
             
             try:
-                payload = jwt.decode(
+                # joserfc decode returns a Token object. The claims are in .claims
+                token = jwt.decode(
                     login_data.id_token, 
-                    jwks, 
-                    claims_options={
-                        "iss": {"values": ["https://accounts.google.com", "accounts.google.com"]},
-                        "aud": {"values": [settings.GOOGLE_CLIENT_ID]}
-                    }
+                    jwks
                 )
+                payload = token.claims
+                
+                # Manual validation of issuer and audience
+                iss = payload.get("iss")
+                aud = payload.get("aud")
+                if iss not in ["https://accounts.google.com", "accounts.google.com"]:
+                    raise ValueError("Invalid issuer")
+                if aud != settings.GOOGLE_CLIENT_ID:
+                    raise ValueError("Invalid audience")
             except Exception as jwt_err:
                 logger.error(f"JWT verification failed: {str(jwt_err)}")
                 raise HTTPException(
