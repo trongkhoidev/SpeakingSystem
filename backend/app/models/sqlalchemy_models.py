@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models aligned with the approved design ERD."""
 
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, Text, Date
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, Text, Date, DECIMAL
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -12,7 +12,6 @@ from ..core.database import Base
 
 # Map to NVARCHAR(MAX) for SQL Server
 NVARCHAR_MAX = MSSQL_NVARCHAR(None)
-DECIMAL = Float
 
 
 class User(Base):
