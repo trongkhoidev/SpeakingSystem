@@ -223,7 +223,23 @@ export function AccountManagementPage() {
                               {(user.full_name || user.email || 'U')[0].toUpperCase()}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 700, color: '#1A1D2B', fontSize: 13 }}>{user.full_name || 'Chưa cập nhật'}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ fontWeight: 700, color: '#1A1D2B', fontSize: 13 }}>{user.full_name || 'Chưa cập nhật'}</div>
+                                {user.role !== 'admin' && (
+                                  <span style={{ 
+                                    fontSize: 9, 
+                                    fontWeight: 800, 
+                                    padding: '2px 6px', 
+                                    borderRadius: 4,
+                                    textTransform: 'uppercase',
+                                    background: user.plan_code === 'plus' ? '#F5F3FF' : user.plan_code === 'basic' ? '#F0F9FF' : '#F8FAFC',
+                                    color: user.plan_code === 'plus' ? '#7C3AED' : user.plan_code === 'basic' ? '#0EA5E9' : '#64748B',
+                                    border: `1px solid ${user.plan_code === 'plus' ? '#DDD6FE' : user.plan_code === 'basic' ? '#BAE6FD' : '#E2E8F0'}`
+                                  }}>
+                                    {user.plan_code || 'Free'}
+                                  </span>
+                                )}
+                              </div>
                               <div style={{ fontSize: 11, color: '#94A3B8' }}>{user.email}</div>
                             </div>
                           </div>

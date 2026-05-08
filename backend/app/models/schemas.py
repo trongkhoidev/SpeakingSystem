@@ -22,6 +22,8 @@ class User(UserBase):
     role: str = "user"
     status: str = "active"
     token_balance: int = 0
+    plan_code: Optional[str] = "free"
+    expires_at: Optional[str] = None
     created_at: Optional[str] = None
 
     class Config:

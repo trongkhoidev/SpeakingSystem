@@ -8,7 +8,6 @@ import uuid
 from ..core.database import Base
 
 from sqlalchemy.dialects.mssql import NVARCHAR as MSSQL_NVARCHAR
-from ..core.database import Base
 
 # Map to NVARCHAR(MAX) for SQL Server
 NVARCHAR_MAX = MSSQL_NVARCHAR(None)
@@ -37,9 +36,11 @@ class User(Base):
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     
     # Relationships
+    wallet = relationship("UserTokenWallet", back_populates="user", uselist=False)
     practice_sessions = relationship("PracticeSession", back_populates="user")
     test_sessions = relationship("TestSession", back_populates="user")
     custom_questions = relationship("CustomQuestion", back_populates="user")
+    feedbacks = relationship("UserFeedback", back_populates="user")
 
 
 class Topic(Base):
@@ -98,48 +99,25 @@ class PracticeSession(Base):
     user_id = Column(String(255), ForeignKey("users.id"), nullable=True)  # Nullable for guests
     title = Column(NVARCHAR_MAX, nullable=True)
     topic_id = Column(String(36), ForeignKey("topics.id"), nullable=True)
-    part = Column(Integer, nullable=True)
-    started_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
-    completed_at = Column(MSSQL_NVARCHAR(50), nullable=True)
+    mode = Column(MSSQL_NVARCHAR(50), default="normal") # normal, focus
+    created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     
     user = relationship("User", back_populates="practice_sessions")
+    custom_questions = relationship("CustomQuestion", back_populates="session")
     answers = relationship("PracticeAnswer", back_populates="session", cascade="all, delete-orphan")
-    custom_questions = relationship("CustomQuestion", back_populates="session", cascade="all, delete-orphan")
 
 
 class PracticeAnswer(Base):
-    """Individual practice answer with full scoring data."""
+    """Single question-answer pair in a practice session."""
     __tablename__ = "practice_answers"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    session_id = Column(String(36), ForeignKey("practice_sessions.id"), nullable=True)
+    session_id = Column(String(36), ForeignKey("practice_sessions.id"))
     question_id = Column(String(36), ForeignKey("questions.id"), nullable=True)
     custom_question_id = Column(String(36), ForeignKey("custom_questions.id"), nullable=True)
-    
-    student_transcript = Column(NVARCHAR_MAX, nullable=True)
-    audio_blob_url = Column(MSSQL_NVARCHAR(500), nullable=True)
-    duration_seconds = Column(Float, nullable=True)
-    
-    # Raw AI results (stored as JSON text)
-    azure_result = Column(NVARCHAR_MAX, nullable=True)  # JSON
-    llm_result = Column(NVARCHAR_MAX, nullable=True)  # JSON
-    
-    # Azure sub-scores (0-100)
-    accuracy_score = Column(DECIMAL(5, 1), nullable=True)
-    fluency_score = Column(DECIMAL(5, 1), nullable=True)
-    completeness_score = Column(DECIMAL(5, 1), nullable=True)
-    prosody_score = Column(DECIMAL(5, 1), nullable=True)
-    
-    # IELTS Band scores (0-9)
-    fc_band = Column(DECIMAL(3, 1), nullable=True)
-    lr_band = Column(DECIMAL(3, 1), nullable=True)
-    gra_band = Column(DECIMAL(3, 1), nullable=True)
-    pronunciation_band = Column(DECIMAL(3, 1), nullable=True)
-    overall_band = Column(DECIMAL(3, 1), nullable=True)
-    
-    # Word-level details (JSON)
-    word_details = Column(NVARCHAR_MAX, nullable=True)
-    
+    audio_url = Column(NVARCHAR_MAX, nullable=True)
+    transcript = Column(NVARCHAR_MAX, nullable=True)
+    feedback_json = Column(NVARCHAR_MAX, nullable=True)
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     
     session = relationship("PracticeSession", back_populates="answers")
@@ -148,64 +126,41 @@ class PracticeAnswer(Base):
 
 
 class TestSession(Base):
-    """IELTS test exam session."""
+    """Full IELTS mock test session."""
     __tablename__ = "test_sessions"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(255), ForeignKey("users.id"), nullable=True)  # Nullable for guests
-    examiner_voice = Column(MSSQL_NVARCHAR(100), nullable=True)
-    question_count = Column(Integer, nullable=True)
-    follow_up_enabled = Column(Boolean, default=False)
-    parts_included = Column(Integer, nullable=True)  # Bitmask or comma-separated
+    exam_set_id = Column(String(36), ForeignKey("exam_sets.id"), nullable=True)
     overall_band = Column(DECIMAL(3, 1), nullable=True)
-    part_scores = Column(NVARCHAR_MAX, nullable=True)  # JSON
+    overall_feedback = Column(NVARCHAR_MAX, nullable=True)
     started_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     completed_at = Column(MSSQL_NVARCHAR(50), nullable=True)
     
     user = relationship("User", back_populates="test_sessions")
-    answers = relationship("TestAnswer", back_populates="test_session")
+    exam_set = relationship("ExamSet", back_populates="test_sessions")
+    answers = relationship("TestAnswer", back_populates="session", cascade="all, delete-orphan")
 
 
 class TestAnswer(Base):
-    """Individual test answer."""
+    """One part of a full test session."""
     __tablename__ = "test_answers"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    test_session_id = Column(String(36), ForeignKey("test_sessions.id"), nullable=False)
-    question_id = Column(String(36), ForeignKey("questions.id"), nullable=False)
-    part_number = Column(Integer, nullable=True)
-    
-    student_transcript = Column(NVARCHAR_MAX, nullable=True)
-    audio_blob_url = Column(MSSQL_NVARCHAR(500), nullable=True)
-    
-    # Raw AI results (JSON)
-    azure_result = Column(NVARCHAR_MAX, nullable=True)
-    llm_result = Column(NVARCHAR_MAX, nullable=True)
-    
-    # Azure sub-scores (0-100)
-    accuracy_score = Column(DECIMAL(5, 1), nullable=True)
-    fluency_score = Column(DECIMAL(5, 1), nullable=True)
-    completeness_score = Column(DECIMAL(5, 1), nullable=True)
-    prosody_score = Column(DECIMAL(5, 1), nullable=True)
-    
-    # IELTS Band scores (0-9)
-    fc_band = Column(DECIMAL(3, 1), nullable=True)
-    lr_band = Column(DECIMAL(3, 1), nullable=True)
-    gra_band = Column(DECIMAL(3, 1), nullable=True)
-    pronunciation_band = Column(DECIMAL(3, 1), nullable=True)
-    overall_band = Column(DECIMAL(3, 1), nullable=True)
-    
-    # Word-level details (JSON)
-    word_details = Column(NVARCHAR_MAX, nullable=True)
-    
+    session_id = Column(String(36), ForeignKey("test_sessions.id"))
+    question_id = Column(String(36), ForeignKey("questions.id"))
+    audio_url = Column(NVARCHAR_MAX, nullable=True)
+    transcript = Column(NVARCHAR_MAX, nullable=True)
+    feedback_json = Column(NVARCHAR_MAX, nullable=True)
+    band_score = Column(DECIMAL(3, 1), nullable=True)
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     
-    test_session = relationship("TestSession", back_populates="answers")
+    session = relationship("TestSession", back_populates="answers")
     question = relationship("Question", back_populates="test_answers")
 
 
 class UserFeedback(Base):
-    """User satisfaction ratings and comments."""
+    """User feedback for the application."""
     __tablename__ = "user_feedbacks"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -215,53 +170,37 @@ class UserFeedback(Base):
     category = Column(MSSQL_NVARCHAR(50), nullable=True)  # General, AI Accuracy, UI
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
     
-    user = relationship("User")
-
-
-class GuestTrial(Base):
-    """Tracks trial usage for non-logged-in users."""
-    __tablename__ = "guest_trials"
-    
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    guest_id = Column(String(100), unique=True, index=True)  # Device fingerprint
-    practice_count = Column(Integer, default=0)
-    test_count = Column(Integer, default=0)
-    user_agent = Column(MSSQL_NVARCHAR(500), nullable=True)
-    last_ip = Column(MSSQL_NVARCHAR(50), nullable=True)
-    converted_user_id = Column(String(255), nullable=True) # ID of registered user if they convert
-    last_active = Column(MSSQL_NVARCHAR(50), server_default=func.now())
-    created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
+    user = relationship("User", back_populates="feedbacks")
 
 
 class UserTokenWallet(Base):
-    """Tracks token usage and plan for each registered user."""
+    """Stores token balance and usage stats for a user."""
     __tablename__ = "user_token_wallets"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String(255), ForeignKey("users.id"), unique=True, index=True, nullable=False)
+    
+    user_id = Column(String(255), ForeignKey("users.id"), primary_key=True)
     plan_code = Column(MSSQL_NVARCHAR(20), default="free")
     token_balance = Column(Integer, default=0)
+    monthly_token_limit = Column(Integer, default=20)
     monthly_token_used = Column(Integer, default=0)
     lifetime_token_used = Column(Integer, default=0)
-    monthly_token_limit = Column(Integer, default=200)
-    last_token_reset_at = Column(MSSQL_NVARCHAR(50), nullable=True)
-    daily_trial_claimed_at = Column(MSSQL_NVARCHAR(50), nullable=True)
+    expires_at = Column(MSSQL_NVARCHAR(50), nullable=True)
+    last_token_reset_at = Column(MSSQL_NVARCHAR(50)) # "YYYY-MM"
+    daily_trial_claimed_at = Column(MSSQL_NVARCHAR(50)) # "YYYY-MM-DD"
     facebook_rewarded = Column(Boolean, default=False)
     x_rewarded = Column(Boolean, default=False)
-    expires_at = Column(MSSQL_NVARCHAR(50), nullable=True) # ISO format date
-    created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
+    
+    user = relationship("User", back_populates="wallet")
 
 
 class BillingPlan(Base):
-    """Persisted billing plan config editable by admin."""
+    """Subscription tier definitions."""
     __tablename__ = "billing_plans"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    code = Column(MSSQL_NVARCHAR(20), unique=True, index=True, nullable=False)
+    
+    code = Column(MSSQL_NVARCHAR(20), primary_key=True) # free, basic, plus
     name = Column(MSSQL_NVARCHAR(100), nullable=False)
-    monthly_tokens = Column(Integer, nullable=False, default=200)
-    practice_cost = Column(Integer, nullable=False, default=10)
-    test_start_cost = Column(Integer, nullable=False, default=35)
+    monthly_tokens = Column(Integer, nullable=False)
+    practice_cost = Column(Integer, nullable=False, default=1)
+    test_start_cost = Column(Integer, nullable=False, default=5)
     daily_trial_bonus = Column(Integer, nullable=False, default=15)
     price_vnd = Column(Integer, nullable=False, default=0) # Base 1 month price
     price_3m = Column(Integer, nullable=True) # Optional fixed price for 3m
@@ -288,24 +227,10 @@ class SubscriptionRequest(Base):
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
 
 
-class ExamSet(Base):
-    __tablename__ = "exam_sets"
-    
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = Column(MSSQL_NVARCHAR(200), nullable=False)
-    description = Column(NVARCHAR_MAX, nullable=True)
-    question_ids_json = Column(NVARCHAR_MAX, nullable=False)  # JSON string of question IDs
-    estimated_minutes = Column(Integer, default=14)
-    difficulty = Column(MSSQL_NVARCHAR(20), default="medium")
-    is_active = Column(Boolean, default=True)
-    tag = Column(MSSQL_NVARCHAR(100), nullable=True)  # e.g. "Forecast Q2/2026"
-    created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
-
-
 class TokenAllocation(Base):
-    """Audit log for manual token allocations by admin."""
+    """Audit log of manual token allocations by admins."""
     __tablename__ = "token_allocations"
-
+    
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     admin_id = Column(String(255), ForeignKey("users.id"), nullable=False)
     user_id = Column(String(255), ForeignKey("users.id"), nullable=False)
@@ -313,5 +238,19 @@ class TokenAllocation(Base):
     reason = Column(NVARCHAR_MAX, nullable=True)
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
 
-    admin = relationship("User", foreign_keys=[admin_id])
-    recipient = relationship("User", foreign_keys=[user_id])
+
+class ExamSet(Base):
+    """Predefined sets of questions for full tests."""
+    __tablename__ = "exam_sets"
+    
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(MSSQL_NVARCHAR(200), nullable=False)
+    description = Column(NVARCHAR_MAX, nullable=True)
+    question_ids_json = Column(NVARCHAR_MAX, nullable=False) # List of UUIDs
+    estimated_minutes = Column(Integer, default=14)
+    difficulty = Column(MSSQL_NVARCHAR(20), default="medium") # easy, medium, hard
+    tag = Column(MSSQL_NVARCHAR(50), nullable=True) # e.g. "2024 Prediction"
+    is_active = Column(Boolean, default=True)
+    created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
+    
+    test_sessions = relationship("TestSession", back_populates="exam_set")

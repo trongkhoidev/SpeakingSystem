@@ -8,6 +8,8 @@ interface User {
   full_name?: string;
   avatar_url?: string;
   role?: 'admin' | 'user' | 'guest';
+  plan_code?: string;
+  expires_at?: string;
 }
 
 interface AuthContextType {

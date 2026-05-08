@@ -169,16 +169,18 @@ def list_users(
     
     from app.models.sqlalchemy_models import UserTokenWallet
     
-    # Query registered users (non-guests) and join with wallet to get token_balance
-    results = db.query(User, UserTokenWallet.token_balance).\
+    # Query registered users (non-guests) and join with wallet to get plan details
+    results = db.query(User, UserTokenWallet.token_balance, UserTokenWallet.plan_code, UserTokenWallet.expires_at).\
         outerjoin(UserTokenWallet, User.id == UserTokenWallet.user_id).\
         filter(User.role != "guest").all()
     
     users = []
     from dateutil import parser as date_parser
-    for user_obj, token_balance in results:
-        # Map the token_balance back to the user object dynamically for the schema
+    for user_obj, token_balance, plan_code, expires_at in results:
+        # Map wallet fields back to the user object dynamically for the schema
         user_obj.token_balance = token_balance or 0
+        user_obj.plan_code = plan_code or "free"
+        user_obj.expires_at = expires_at
         user_obj.day_streak = user_obj.day_streak or 0
         user_obj.estimated_band = float(user_obj.estimated_band or 0.0)
         user_obj.role = user_obj.role or "user"
@@ -277,9 +279,19 @@ def approve_subscription_request(
 
     plan = TokenService.get_effective_plan(db, req.plan_code)
     wallet = TokenService.get_or_create_wallet(db, user)
+    
+    # Update plan details
     wallet.plan_code = req.plan_code
     wallet.monthly_token_limit = int(plan["monthly_tokens"])
-    wallet.token_balance = max(int(wallet.token_balance or 0), int(plan["monthly_tokens"]))
+    
+    # ADD tokens immediately (don't just set max, accumulate them)
+    # This ensures users get the tokens they paid for.
+    tokens_to_add = int(plan["monthly_tokens"])
+    wallet.token_balance = (wallet.token_balance or 0) + tokens_to_add
+    
+    # Reset monthly usage counter so they start fresh with their new plan
+    wallet.monthly_token_used = 0
+    wallet.last_token_reset_at = TokenService._month_key(TokenService._now())
 
     # Set expiration date
     duration = req.duration_months or 1

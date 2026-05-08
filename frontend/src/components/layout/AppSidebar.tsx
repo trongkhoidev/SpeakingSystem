@@ -75,8 +75,23 @@ export function AppSidebar({ isCollapsed, onToggle }: { isCollapsed: boolean, on
             >
               {user.email ? user.email.split('@')[0] : user.name || 'Người dùng'}
             </div>
-            <div style={{ fontSize: 11, color: user.role === 'admin' ? '#4361EE' : '#9CA3AF', fontWeight: user.role === 'admin' ? 700 : 400 }}>
-              {user.role === 'admin' ? 'Administrator' : 'IELTS Learner'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ fontSize: 11, color: user.role === 'admin' ? '#4361EE' : '#9CA3AF', fontWeight: user.role === 'admin' ? 700 : 400 }}>
+                {user.role === 'admin' ? 'Administrator' : 'IELTS Learner'}
+              </div>
+              {user.role !== 'admin' && (
+                <span style={{ 
+                  fontSize: 8, 
+                  fontWeight: 800, 
+                  padding: '1px 4px', 
+                  borderRadius: 4, 
+                  background: user.plan_code === 'plus' ? '#7C3AED' : user.plan_code === 'basic' ? '#0EA5E9' : '#64748B',
+                  color: '#fff',
+                  textTransform: 'uppercase'
+                }}>
+                  {user.plan_code || 'Free'}
+                </span>
+              )}
             </div>
           </div>
         </div>
