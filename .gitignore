@@ -57,8 +57,11 @@ Assignment/
 
 # Agent & Internal Docs
 .agent/
+.agent/workflows/
 .cursor/
 .ai-devkit.json
+docs/
+/docs/
 docs/ai/
 AGENTS.md
 progress_report.md
