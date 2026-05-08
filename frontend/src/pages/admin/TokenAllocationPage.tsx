@@ -181,70 +181,111 @@ export function TokenAllocationPage() {
       </div>
 
       {/* ── History Table ── */}
-      <div className="card shadow-premium" style={{ padding: 0, overflow: 'hidden', border: '1px solid #F1F5F9' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <History size={18} color="#64748B" />
+      <div className="card shadow-premium" style={{ padding: 0, overflow: 'hidden', border: '1px solid #F1F5F9', borderRadius: 16 }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <History size={20} color="#475569" />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1A1D2B' }}>Lịch sử cấp phát token</h3>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1E293B', margin: 0 }}>Lịch sử cấp phát token</h3>
+              <p style={{ fontSize: 12, color: '#94A3B8', margin: 0 }}>Nhật ký 100 giao dịch gần nhất</p>
+            </div>
           </div>
           <button 
             onClick={fetchHistory}
             className="btn btn-secondary" 
-            style={{ fontSize: 13, padding: '8px 16px', borderRadius: 10 }}
+            style={{ fontSize: 13, padding: '10px 20px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8, background: '#F8FAFC', border: '1px solid #E2E8F0' }}
           >
-            Làm mới nhật ký
+            <History size={14} /> Làm mới nhật ký
           </button>
         </div>
-        <table className="data-table">
-          <thead style={{ background: '#F8FAFC' }}>
-            <tr>
-              <th style={{ padding: '16px 24px' }}>Admin thực hiện</th>
-              <th>Người nhận</th>
-              <th>Số lượng</th>
-              <th>Lý do & Nội dung</th>
-              <th style={{ textAlign: 'right', paddingRight: 24 }}>Thời gian</th>
-            </tr>
-          </thead>
-          <tbody style={{ fontSize: 14 }}>
-            {fetchingHistory ? (
-              [...Array(3)].map((_, i) => (
-                <tr key={i}><td colSpan={5} style={{ padding: 20 }}><div className="skeleton" style={{ height: 44, width: '100%', borderRadius: 8 }} /></td></tr>
-              ))
-            ) : history.length > 0 ? (
-              history.map((row) => (
-                <tr key={row.id} className="hover-row">
-                  <td style={{ padding: '16px 24px' }}>
-                    <div style={{ fontWeight: 600, color: '#1E293B' }}>{row.admin_email}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 700, color: '#4361EE' }}>{row.recipient_email}</div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, color: '#10B981', fontSize: 15 }}>
-                      <Diamond size={14} fill="#10B981" />
-                      +{row.amount.toLocaleString()}
+        
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ background: '#F8FAFC' }}>
+              <tr>
+                <th style={{ padding: '16px 32px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin thực hiện</th>
+                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Người nhận</th>
+                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Số lượng</th>
+                <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lý do & Nội dung</th>
+                <th style={{ padding: '16px 32px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody style={{ fontSize: 14 }}>
+              {fetchingHistory ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i}><td colSpan={5} style={{ padding: '12px 32px' }}><div className="skeleton" style={{ height: 50, width: '100%', borderRadius: 12 }} /></td></tr>
+                ))
+              ) : history.length > 0 ? (
+                history.map((row) => (
+                  <tr key={row.id} className="hover-row" style={{ borderBottom: '1px solid #F1F5F9', transition: 'all 0.2s' }}>
+                    <td style={{ padding: '20px 32px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E0F2FE', color: '#0369A1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
+                          {row.admin_email?.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ fontWeight: 600, color: '#334155' }}>{row.admin_email}</div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '20px 24px' }}>
+                      <div style={{ fontWeight: 600, color: '#4361EE', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <User size={14} /> {row.recipient_email}
+                      </div>
+                    </td>
+                    <td style={{ padding: '20px 24px' }}>
+                      <div style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: 6, 
+                        fontWeight: 800, 
+                        color: '#059669', 
+                        fontSize: 14,
+                        background: '#ECFDF5',
+                        padding: '6px 12px',
+                        borderRadius: 20,
+                        border: '1px solid #D1FAE5'
+                      }}>
+                        <Diamond size={12} fill="#059669" />
+                        +{row.amount.toLocaleString()}
+                      </div>
+                    </td>
+                    <td style={{ padding: '20px 24px' }}>
+                      <div style={{ color: '#64748B', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontStyle: row.reason === 'Manual allocation' ? 'italic' : 'normal' }}>
+                        {row.reason}
+                      </div>
+                    </td>
+                    <td style={{ padding: '20px 32px', textAlign: 'right' }}>
+                      <div style={{ color: '#475569', fontWeight: 600, fontSize: 13 }}>
+                        {row.created_at ? new Date(row.created_at).toLocaleDateString('vi-VN', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        }) : 'N/A'}
+                      </div>
+                      <div style={{ color: '#94A3B8', fontSize: 11 }}>
+                        {row.created_at ? new Date(row.created_at).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : ''}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '100px 40px', color: '#94A3B8' }}>
+                    <div style={{ background: '#F8FAFC', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                      <History size={32} style={{ opacity: 0.2 }} />
                     </div>
-                  </td>
-                  <td style={{ color: '#64748B', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {row.reason}
-                  </td>
-                  <td style={{ textAlign: 'right', paddingRight: 24, color: '#94A3B8', fontSize: 12 }}>
-                    {new Date(row.created_at).toLocaleString('vi-VN')}
+                    <div style={{ fontWeight: 600, color: '#64748B' }}>Chưa có nhật ký giao dịch</div>
+                    <div style={{ fontSize: 13, marginTop: 4 }}>Mọi hoạt động cấp phát token sẽ xuất hiện tại đây.</div>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '60px 40px', color: '#94A3B8' }}>
-                  <History size={40} style={{ opacity: 0.1, marginBottom: 12 }} />
-                  <div>Chưa có nhật ký giao dịch nào được ghi lại.</div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

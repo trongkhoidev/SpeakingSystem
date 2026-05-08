@@ -175,6 +175,7 @@ def list_users(
         filter(User.role != "guest").all()
     
     users = []
+    from dateutil import parser as date_parser
     for user_obj, token_balance in results:
         # Map the token_balance back to the user object dynamically for the schema
         user_obj.token_balance = token_balance or 0
@@ -182,6 +183,15 @@ def list_users(
         user_obj.estimated_band = float(user_obj.estimated_band or 0.0)
         user_obj.role = user_obj.role or "user"
         user_obj.status = user_obj.status or "active"
+        
+        # Format created_at for frontend
+        if user_obj.created_at:
+            try:
+                dt_obj = date_parser.parse(user_obj.created_at)
+                user_obj.created_at = dt_obj.isoformat()
+            except:
+                pass
+        
         users.append(user_obj)
         
     return users
@@ -223,12 +233,26 @@ def list_pending_subscription_requests(
 ):
     """List subscription requests waiting for admin review."""
     check_admin(admin_user)
-    rows = (
-        db.query(SubscriptionRequest)
+    results = (
+        db.query(SubscriptionRequest, User.email)
+        .join(User, SubscriptionRequest.user_id == User.id)
         .filter(SubscriptionRequest.status == "pending")
         .order_by(SubscriptionRequest.created_at.desc())
         .all()
     )
+    
+    rows = []
+    for req, email in results:
+        rows.append({
+            "id": req.id,
+            "user_id": req.user_id,
+            "user_email": email,
+            "plan_code": req.plan_code,
+            "amount_vnd": req.amount_vnd,
+            "transfer_ref": req.transfer_ref,
+            "status": req.status,
+            "created_at": req.created_at
+        })
     return rows
 
 
@@ -466,7 +490,8 @@ def allocate_tokens(
         admin_id=admin_id,
         user_id=user.id,
         amount=amount,
-        reason=reason
+        reason=reason,
+        created_at=datetime.utcnow().isoformat()
     )
     db.add(allocation)
     db.commit()
@@ -494,14 +519,26 @@ def get_token_allocation_history(
     )
     
     result = []
+    from dateutil import parser as date_parser
     for r in rows:
+        # Safely parse the DB date string
+        try:
+            dt_str = r.created_at
+            if dt_str:
+                dt_obj = date_parser.parse(dt_str)
+                iso_date = dt_obj.isoformat()
+            else:
+                iso_date = None
+        except:
+            iso_date = r.created_at
+
         result.append({
             "id": r.id,
             "admin_email": db.query(User.email).filter(User.id == r.admin_id).scalar(),
             "recipient_email": db.query(User.email).filter(User.id == r.user_id).scalar(),
             "amount": r.amount,
             "reason": r.reason,
-            "created_at": r.created_at
+            "created_at": iso_date
         })
         
     return result
@@ -660,4 +697,115 @@ def get_question_bank(
             "cue_card_json": q.cue_card_json
         })
     return result
+
+
+@router.post("/questions/bank/batch")
+def batch_add_to_bank(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Add multiple questions to the bank at once."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import Question
+    
+    questions_texts = payload.get("questions", [])
+    part = payload.get("part")
+    topic_id = payload.get("topic_id")
+    
+    if not questions_texts or not part:
+        raise HTTPException(status_code=400, detail="Missing questions or part")
+    
+    added_count = 0
+    for text in questions_texts:
+        if not text.strip():
+            continue
+        q = Question(
+            question_text=text.strip(),
+            part=part,
+            topic_id=topic_id
+        )
+        db.add(q)
+        added_count += 1
+    
+    db.commit()
+    return {"message": f"Successfully added {added_count} questions", "count": added_count}
+
+
+@router.post("/questions/bank")
+def add_to_bank(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Add a new question to the bank."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import Question
+    
+    q = Question(
+        question_text=payload["question_text"],
+        part=payload["part"],
+        topic_id=payload.get("topic_id"),
+        model_answer=payload.get("model_answer"),
+        cue_card_json=payload.get("cue_card_json")
+    )
+    db.add(q)
+    db.commit()
+    db.refresh(q)
+    return {"message": "Question added", "id": q.id}
+
+
+@router.put("/questions/bank/{q_id}")
+def update_bank_question(
+    q_id: str,
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Update a question in the bank."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import Question
+    
+    q = db.query(Question).filter(Question.id == q_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    allowed = {"question_text", "part", "topic_id", "model_answer", "cue_card_json"}
+    for k, v in payload.items():
+        if k in allowed and v is not None:
+            setattr(q, k, v)
+    
+    db.commit()
+    return {"message": "Question updated", "id": q.id}
+
+
+@router.delete("/questions/bank/{q_id}")
+def delete_bank_question(
+    q_id: str,
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Delete a question from the bank."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import Question
+    
+    q = db.query(Question).filter(Question.id == q_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    db.delete(q)
+    db.commit()
+    return {"message": "Question deleted", "id": q_id}
+
+
+@router.get("/topics")
+def get_topics(
+    db: Session = Depends(get_db),
+    admin_user: Any = Depends(get_current_user)
+):
+    """Get all topics for question categorization."""
+    check_admin(admin_user)
+    from app.models.sqlalchemy_models import Topic
+    topics = db.query(Topic).order_by(Topic.part, Topic.name).all()
+    return topics
 
