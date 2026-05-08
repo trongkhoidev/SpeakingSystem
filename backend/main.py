@@ -29,6 +29,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} starting...")
     logger.info(f"🌐 Environment: {'Debug' if settings.DEBUG else 'Production'}")
     logger.info(f"🔒 CORS Allowed Origins: {settings.CORS_ORIGINS}")
+    
+    # Run database migrations
+    try:
+        from migrate_db import migrate
+        migrate()
+        logger.info("✅ Database migration check complete")
+    except Exception as e:
+        logger.error(f"❌ Database migration failed: {e}")
+
     logger.info("✅ App ready — database will connect on first request")
     
     yield
