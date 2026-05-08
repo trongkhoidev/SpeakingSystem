@@ -1,6 +1,7 @@
 """Database configuration for Azure SQL via SQLAlchemy 2.0 + pyodbc."""
 
-from sqlalchemy import create_engine
+# pyrefly: ignore [missing-import]
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from .config import settings
 
