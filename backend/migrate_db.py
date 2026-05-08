@@ -61,6 +61,17 @@ def migrate():
             print("Added bank_account_info to billing_plans")
         except Exception: pass
 
+        # 6. Update test_sessions
+        try:
+            conn.execute(text("ALTER TABLE test_sessions ADD exam_set_id NVARCHAR(36) NULL"))
+            print("Added exam_set_id to test_sessions")
+        except Exception: pass
+        
+        try:
+            conn.execute(text("ALTER TABLE test_sessions ADD overall_feedback NVARCHAR(MAX) NULL"))
+            print("Added overall_feedback to test_sessions")
+        except Exception: pass
+
         conn.commit()
         print("Migration complete.")
 

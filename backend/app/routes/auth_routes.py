@@ -82,6 +82,16 @@ async def get_current_user(
     if role == "admin":
         user.role = "admin"
 
+    # Attach wallet info for Pydantic serialization
+    if user.wallet:
+        user.token_balance = user.wallet.token_balance or 0
+        user.plan_code = user.wallet.plan_code or "free"
+        user.expires_at = user.wallet.expires_at
+    else:
+        user.token_balance = 0
+        user.plan_code = "free"
+        user.expires_at = None
+
     return user
 
 @router.post("/google", response_model=Token)
@@ -192,6 +202,16 @@ async def google_login(
             "role": token_role
         })
         
+        # Attach wallet info for Pydantic serialization
+        if user.wallet:
+            user.token_balance = user.wallet.token_balance or 0
+            user.plan_code = user.wallet.plan_code or "free"
+            user.expires_at = user.wallet.expires_at
+        else:
+            user.token_balance = 0
+            user.plan_code = "free"
+            user.expires_at = None
+
         return {
             "access_token": access_token,
             "token_type": "bearer",

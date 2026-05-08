@@ -13,6 +13,9 @@ from app.models.sqlalchemy_models import (
 )
 from app.models.schemas import User as UserSchema, UserFeedback as UserFeedbackSchema, UserFeedbackCreate
 from app.services.token_service import TokenService, PLAN_DEFS
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -280,34 +283,53 @@ def approve_subscription_request(
     plan = TokenService.get_effective_plan(db, req.plan_code)
     wallet = TokenService.get_or_create_wallet(db, user)
     
-    # Update plan details
-    wallet.plan_code = req.plan_code
-    wallet.monthly_token_limit = int(plan["monthly_tokens"])
+    old_balance = int(wallet.token_balance or 0)
     
-    # ADD tokens immediately (don't just set max, accumulate them)
-    # This ensures users get the tokens they paid for.
+    # Define tier weights to compare plans
+    TIER_WEIGHTS = {"free": 0, "basic": 1, "plus": 2}
+    current_tier = TIER_WEIGHTS.get(wallet.plan_code, 0)
+    new_tier = TIER_WEIGHTS.get(req.plan_code, 0)
+    
     tokens_to_add = int(plan["monthly_tokens"])
-    wallet.token_balance = (wallet.token_balance or 0) + tokens_to_add
     
-    # Reset monthly usage counter so they start fresh with their new plan
-    wallet.monthly_token_used = 0
-    wallet.last_token_reset_at = TokenService._month_key(TokenService._now())
+    if new_tier >= current_tier:
+        # Upgrade or Renew: Update plan details and extend expiration
+        wallet.plan_code = req.plan_code
+        wallet.monthly_token_limit = int(plan["monthly_tokens"])
+        
+        # Reset monthly usage counter so they start fresh with their new plan
+        wallet.monthly_token_used = 0
+        wallet.last_token_reset_at = TokenService._month_key(TokenService._now())
+        
+        # Set expiration date
+        duration = req.duration_months or 1
+        current_expiry = TokenService._parse_dt(wallet.expires_at)
+        base_date = current_expiry if (current_expiry and current_expiry > TokenService._now()) else TokenService._now()
+        new_expiry = base_date + timedelta(days=30 * duration)
+        wallet.expires_at = new_expiry.isoformat()
+        
+        logger.info(f"Subscription UPGRADE/RENEWAL: User {user.email} | Old Plan: {wallet.plan_code} | New Plan: {req.plan_code} | Added: {tokens_to_add}")
+    else:
+        # Downgrade / Top-up: They ran out of tokens and bought a cheaper plan.
+        # Keep the higher tier active (plan_code and consumption rates remain the same).
+        # We only add the tokens, and we DO NOT extend the expiration date of the higher tier.
+        logger.info(f"Subscription TOP-UP (Downgrade): User {user.email} | Retaining Plan: {wallet.plan_code} | Bought: {req.plan_code} | Added: {tokens_to_add}")
 
-    # Set expiration date
-    duration = req.duration_months or 1
-    # If already has a future expiration date, extend it, otherwise start from now
-    current_expiry = TokenService._parse_dt(wallet.expires_at)
-    base_date = current_expiry if (current_expiry and current_expiry > TokenService._now()) else TokenService._now()
-    # Approx 30 days per month
-    new_expiry = base_date + timedelta(days=30 * duration)
-    wallet.expires_at = new_expiry.isoformat()
+    # ADD tokens immediately in both cases
+    wallet.token_balance = old_balance + tokens_to_add
 
     reviewer_id = admin_user.get("id") if isinstance(admin_user, dict) else admin_user.id
     req.status = "approved"
     req.reviewed_by = reviewer_id
     req.reviewed_at = datetime.utcnow().isoformat()
     db.commit()
-    return {"message": "Request approved", "request_id": req.id, "status": req.status}
+    
+    return {
+        "message": "Request approved", 
+        "request_id": req.id, 
+        "status": req.status,
+        "new_balance": wallet.token_balance
+    }
 
 
 @router.post("/billing/requests/{request_id}/reject")
