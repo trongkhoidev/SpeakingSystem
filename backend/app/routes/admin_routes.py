@@ -250,6 +250,7 @@ def list_pending_subscription_requests(
             "plan_code": req.plan_code,
             "amount_vnd": req.amount_vnd,
             "transfer_ref": req.transfer_ref,
+            "duration_months": req.duration_months,
             "status": req.status,
             "created_at": req.created_at
         })
@@ -279,6 +280,15 @@ def approve_subscription_request(
     wallet.plan_code = req.plan_code
     wallet.monthly_token_limit = int(plan["monthly_tokens"])
     wallet.token_balance = max(int(wallet.token_balance or 0), int(plan["monthly_tokens"]))
+
+    # Set expiration date
+    duration = req.duration_months or 1
+    # If already has a future expiration date, extend it, otherwise start from now
+    current_expiry = TokenService._parse_dt(wallet.expires_at)
+    base_date = current_expiry if (current_expiry and current_expiry > TokenService._now()) else TokenService._now()
+    # Approx 30 days per month
+    new_expiry = base_date + timedelta(days=30 * duration)
+    wallet.expires_at = new_expiry.isoformat()
 
     reviewer_id = admin_user.get("id") if isinstance(admin_user, dict) else admin_user.id
     req.status = "approved"
@@ -447,7 +457,8 @@ def update_plan_config(
 
     allowed_fields = {
         "name", "monthly_tokens", "practice_cost",
-        "test_start_cost", "daily_trial_bonus", "price_vnd", "bank_account_info"
+        "test_start_cost", "daily_trial_bonus", "price_vnd", 
+        "price_3m", "price_6m", "price_12m", "bank_account_info"
     }
     for k, v in payload.items():
         if k in allowed_fields and v is not None:

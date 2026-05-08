@@ -253,9 +253,9 @@ export function PlanManagementPage() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1A1D2B' }}>
-                      <Coins size={14} color="#B45309" /> Giá tiền (VND)
+                      <Coins size={14} color="#B45309" /> Giá 1 tháng (VND)
                     </div>
                     {isEditing ? (
                       <input 
@@ -270,6 +270,56 @@ export function PlanManagementPage() {
                         {plan.price_vnd?.toLocaleString()}đ
                       </div>
                     )}
+                  </div>
+
+                  {/* Multi-month prices */}
+                  <div style={{ background: '#F8FAFC', padding: '12px 16px', borderRadius: 12, marginTop: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', marginBottom: 8 }}>Giá gói dài hạn (VND)</div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, color: '#64748B' }}>3 tháng</div>
+                      {isEditing ? (
+                        <input 
+                          type="number" 
+                          className="input" 
+                          style={{ width: 100, textAlign: 'right', padding: '4px 8px' }}
+                          value={editValues.price_3m || 0}
+                          onChange={(e) => setEditValues({ ...editValues, price_3m: parseInt(e.target.value) || 0 })}
+                        />
+                      ) : (
+                        <div style={{ fontWeight: 700, fontSize: 13 }}>{plan.price_3m?.toLocaleString() || 'Chưa đặt'}đ</div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, color: '#64748B' }}>6 tháng</div>
+                      {isEditing ? (
+                        <input 
+                          type="number" 
+                          className="input" 
+                          style={{ width: 100, textAlign: 'right', padding: '4px 8px' }}
+                          value={editValues.price_6m || 0}
+                          onChange={(e) => setEditValues({ ...editValues, price_6m: parseInt(e.target.value) || 0 })}
+                        />
+                      ) : (
+                        <div style={{ fontWeight: 700, fontSize: 13 }}>{plan.price_6m?.toLocaleString() || 'Chưa đặt'}đ</div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 12, color: '#64748B' }}>12 tháng</div>
+                      {isEditing ? (
+                        <input 
+                          type="number" 
+                          className="input" 
+                          style={{ width: 100, textAlign: 'right', padding: '4px 8px' }}
+                          value={editValues.price_12m || 0}
+                          onChange={(e) => setEditValues({ ...editValues, price_12m: parseInt(e.target.value) || 0 })}
+                        />
+                      ) : (
+                        <div style={{ fontWeight: 700, fontSize: 13 }}>{plan.price_12m?.toLocaleString() || 'Chưa đặt'}đ</div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

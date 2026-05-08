@@ -507,9 +507,15 @@ function UserDetailPanel({ userId, onClose, onUpdate, activeTab, pendingRequest 
               <span style={{ fontSize: 12, color: '#64748B' }}>Số dư:</span>
               <span style={{ fontSize: 13, fontWeight: 800, color: '#1A1D2B' }}>{wallet.token_balance.toLocaleString()} 💎</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 12, color: '#64748B' }}>Đã dùng (tháng):</span>
               <span style={{ fontSize: 12, fontWeight: 600 }}>{wallet.monthly_token_used} / {wallet.monthly_token_limit}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: '#64748B' }}>Hết hạn:</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: wallet.expires_at ? '#DC2626' : '#64748B' }}>
+                {wallet.expires_at ? new Date(wallet.expires_at).toLocaleDateString('vi-VN') : 'Vô thời hạn'}
+              </span>
             </div>
           </div>
         </section>

@@ -58,6 +58,9 @@ class TokenService:
             "test_start_cost": int(row.test_start_cost),
             "daily_trial_bonus": int(row.daily_trial_bonus),
             "price_vnd": int(row.price_vnd),
+            "price_3m": row.price_3m,
+            "price_6m": row.price_6m,
+            "price_12m": row.price_12m,
             "bank_account_info": row.bank_account_info,
         }
 
@@ -75,6 +78,9 @@ class TokenService:
                     test_start_cost=int(plan["test_start_cost"]),
                     daily_trial_bonus=int(plan["daily_trial_bonus"]),
                     price_vnd=int(plan["price_vnd"]),
+                    price_3m=plan.get("price_3m"),
+                    price_6m=plan.get("price_6m"),
+                    price_12m=plan.get("price_12m"),
                 ))
                 changed = True
         if changed:
@@ -167,6 +173,26 @@ class TokenService:
             db.commit()
 
     @staticmethod
+    def check_and_apply_expiration(db: Session, user: User) -> bool:
+        """Check if user plan has expired and revert to free if so."""
+        wallet = TokenService.get_or_create_wallet(db, user)
+        if not wallet.expires_at or wallet.plan_code == "free":
+            return False
+        
+        expires_at = TokenService._parse_dt(wallet.expires_at)
+        if expires_at and expires_at < TokenService._now():
+            # Plan expired
+            wallet.plan_code = "free"
+            wallet.expires_at = None
+            plan = TokenService.get_effective_plan(db, "free")
+            wallet.monthly_token_limit = int(plan["monthly_tokens"])
+            # We don't reset balance immediately to avoid negative experience, 
+            # but they'll be limited by the free plan rules on next reset/usage.
+            db.commit()
+            return True
+        return False
+
+    @staticmethod
     def claim_daily_trial_tokens(db: Session, user: User) -> int:
         wallet = TokenService.get_or_create_wallet(db, user)
         plan = TokenService.get_effective_plan(db, wallet.plan_code)
@@ -182,6 +208,7 @@ class TokenService:
     @staticmethod
     def check_can_consume(db: Session, user: User, required_tokens: int) -> TokenCheckResult:
         TokenService.ensure_user_plan_initialized(db, user)
+        TokenService.check_and_apply_expiration(db, user)
         TokenService.maybe_reset_monthly_quota(db, user)
         wallet = TokenService.get_or_create_wallet(db, user)
         remaining = int(wallet.token_balance or 0)
@@ -249,4 +276,5 @@ class TokenService:
             "social_reward_tokens": SOCIAL_REWARD_TOKENS,
             "facebook_rewarded": bool(wallet.facebook_rewarded),
             "x_rewarded": bool(wallet.x_rewarded),
+            "expires_at": wallet.expires_at,
         }

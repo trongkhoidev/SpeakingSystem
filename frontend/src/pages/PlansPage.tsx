@@ -16,6 +16,9 @@ interface Plan {
   test_start_cost: number;
   daily_trial_bonus: number;
   price_vnd: number;
+  price_3m?: number;
+  price_6m?: number;
+  price_12m?: number;
 }
 
 export function PlansPage() {
@@ -23,15 +26,16 @@ export function PlansPage() {
   const [usage, setUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'halfYearly' | 'yearly'>('monthly');
   const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1);
   const [transferRef, setTransferRef] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const DURATIONS = {
-    monthly: { months: 1, discount: 0, label: 'Tháng' },
-    quarterly: { months: 3, discount: 0.15, label: '3 Tháng' },
-    yearly: { months: 12, discount: 0.35, label: '1 Năm' }
+    monthly: { months: 1, label: 'Tháng' },
+    quarterly: { months: 3, label: '3 Tháng' },
+    halfYearly: { months: 6, label: '6 Tháng' },
+    yearly: { months: 12, label: '1 Năm' }
   };
 
   const loadData = async () => {
@@ -51,21 +55,37 @@ export function PlansPage() {
     loadData();
   }, []);
 
-  const calculatePrice = (basePrice: number) => {
-    const { months, discount } = DURATIONS[billingCycle];
-    return Math.round((basePrice * months * (1 - discount)) / 1000) * 1000;
+  const calculatePrice = (plan: Plan) => {
+    if (billingCycle === 'monthly') return plan.price_vnd;
+    if (billingCycle === 'quarterly') return plan.price_3m || (plan.price_vnd * 3);
+    if (billingCycle === 'halfYearly') return plan.price_6m || (plan.price_vnd * 6);
+    if (billingCycle === 'yearly') return plan.price_12m || (plan.price_vnd * 12);
+    return plan.price_vnd;
+  };
+
+  const calculateDiscount = (plan: Plan, cycle: keyof typeof DURATIONS) => {
+    if (cycle === 'monthly') return 0;
+    const months = DURATIONS[cycle].months;
+    const basePrice = plan.price_vnd * months;
+    let actualPrice = 0;
+    if (cycle === 'quarterly') actualPrice = plan.price_3m || basePrice;
+    else if (cycle === 'halfYearly') actualPrice = plan.price_6m || basePrice;
+    else if (cycle === 'yearly') actualPrice = plan.price_12m || basePrice;
+    
+    if (actualPrice >= basePrice) return 0;
+    return Math.round((1 - (actualPrice / basePrice)) * 100);
   };
 
   const handleSubscribe = async () => {
     if (!selectedPlan || !transferRef) return;
     setIsSubmitting(true);
     try {
-      const totalPrice = calculatePrice(selectedPlan.price_vnd);
+      const totalPrice = calculatePrice(selectedPlan);
       const res = await api.post(`/billing/subscribe/${selectedPlan.code}`, null, {
         params: { 
           transfer_ref: transferRef, 
           note: `${DURATIONS[billingCycle].label} Plan - QR Payment`,
-          amount_override: totalPrice // Backend should handle this if possible
+          duration_months: DURATIONS[billingCycle].months
         },
       });
       toast.success('Đã gửi yêu cầu nâng cấp! Vui lòng chờ admin xác nhận.');
@@ -141,24 +161,30 @@ export function PlansPage() {
         {/* ── Billing Toggle ── */}
         <div className="flex justify-center">
           <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 border border-slate-200">
-            {(['monthly', 'quarterly', 'yearly'] as const).map((cycle) => (
-              <button
-                key={cycle}
-                onClick={() => setBillingCycle(cycle)}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
-                  billingCycle === cycle 
-                    ? 'bg-white text-indigo-600 shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {DURATIONS[cycle].label}
-                {DURATIONS[cycle].discount > 0 && (
-                  <span className="ml-1.5 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md">
-                    -{DURATIONS[cycle].discount * 100}%
-                  </span>
-                )}
-              </button>
-            ))}
+            {(['monthly', 'quarterly', 'halfYearly', 'yearly'] as const).map((cycle) => {
+              // Find first paid plan to show discount in toggle (optional)
+              const paidPlan = plans.find(p => p.price_vnd > 0);
+              const discount = paidPlan ? calculateDiscount(paidPlan, cycle) : 0;
+              
+              return (
+                <button
+                  key={cycle}
+                  onClick={() => setBillingCycle(cycle)}
+                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                    billingCycle === cycle 
+                      ? 'bg-white text-indigo-600 shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {DURATIONS[cycle].label}
+                  {discount > 0 && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md">
+                      -{discount}%
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -184,7 +210,11 @@ export function PlansPage() {
                 <UsageStat label="Gói hiện tại" value={usage.plan_name} sub="Hạn mức tháng" />
                 <UsageStat label="💎 còn lại" value={<div className="flex items-center gap-1">{usage.token_balance} <Diamond size={16} fill="#0EA5E9" color="#0EA5E9" /></div>} sub="Khả dụng ngay" />
                 <UsageStat label="Đã dùng" value={`${usage.monthly_token_used}/${usage.monthly_token_limit}`} sub="Tháng này" />
-                <UsageStat label="Cấp độ" value="Standard" sub="AI Examiner" />
+                <UsageStat 
+                  label="Hạn dùng" 
+                  value={usage.expires_at ? new Date(usage.expires_at).toLocaleDateString('vi-VN') : 'Vô thời hạn'} 
+                  sub={usage.expires_at ? 'Ngày hết hạn' : 'Gói mặc định'} 
+                />
               </div>
             </div>
 
@@ -225,15 +255,31 @@ export function PlansPage() {
         </motion.div>
       )}
 
+      {/* ── Expiration Warning ── */}
+      {usage?.expires_at && (new Date(usage.expires_at).getTime() - new Date().getTime()) < 3 * 24 * 60 * 60 * 1000 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800"
+        >
+          <Info size={20} className="text-amber-600" />
+          <div className="text-sm font-bold">
+            Gói của bạn sẽ hết hạn vào ngày {new Date(usage.expires_at).toLocaleDateString('vi-VN')}. Hãy gia hạn ngay để không bị gián đoạn việc học!
+          </div>
+        </motion.div>
+      )}
+
       {/* ── Pricing Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
         {plans.map((plan, i) => {
-          const currentPrice = calculatePrice(plan.price_vnd);
+          const currentPrice = calculatePrice(plan);
+          const discount = calculateDiscount(plan, billingCycle);
           return (
             <PricingCard 
               key={plan.code} 
               plan={plan} 
               displayPrice={currentPrice}
+              discountPercent={discount}
               cycleLabel={DURATIONS[billingCycle].label}
               delay={i * 0.1} 
               isCurrent={usage?.plan_name?.toLowerCase().includes(plan.name.toLowerCase())}
@@ -308,21 +354,13 @@ export function PlansPage() {
                         <h4 className="text-xl font-black text-slate-900">Xác nhận thanh toán</h4>
                         <div className="bg-indigo-50 p-6 rounded-3xl space-y-3">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Tạm tính ({DURATIONS[billingCycle].label})</span>
-                            <span className="font-bold text-slate-900">
-                              {(selectedPlan.price_vnd * DURATIONS[billingCycle].months).toLocaleString('vi-VN')} VND
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Ưu đãi {DURATIONS[billingCycle].label}</span>
-                            <span className="text-emerald-600 font-bold">
-                              -{((selectedPlan.price_vnd * DURATIONS[billingCycle].months) - calculatePrice(selectedPlan.price_vnd)).toLocaleString('vi-VN')} VND
-                            </span>
+                            <span className="text-slate-500">Gói đăng ký</span>
+                            <span className="font-bold text-slate-900">{selectedPlan.name} - {DURATIONS[billingCycle].label}</span>
                           </div>
                           <div className="pt-3 border-t border-indigo-100 flex justify-between items-center">
                             <span className="font-black text-slate-900">Tổng cộng</span>
                             <span className="text-2xl font-black text-indigo-600">
-                              {calculatePrice(selectedPlan.price_vnd).toLocaleString('vi-VN')} VND
+                              {calculatePrice(selectedPlan).toLocaleString('vi-VN')} VND
                             </span>
                           </div>
                         </div>
@@ -357,7 +395,7 @@ export function PlansPage() {
                       <div className="flex flex-col items-center gap-4">
                         <div className="bg-white p-3 border-4 border-slate-50 rounded-3xl shadow-lg relative group">
                           <img 
-                            src={`https://img.vietqr.io/image/momo-0338831247-compact2.jpg?amount=${calculatePrice(selectedPlan.price_vnd)}&addInfo=LEXI ${selectedPlan.code} ${DURATIONS[billingCycle].months}T ${usage?.user_id?.slice(-4) || ''}`}
+                            src={`https://img.vietqr.io/image/momo-0338831247-compact2.jpg?amount=${calculatePrice(selectedPlan)}&addInfo=LEXI ${selectedPlan.code} ${DURATIONS[billingCycle].months}T ${usage?.user_id?.slice(-4) || ''}`}
                             alt="Payment QR"
                             className="w-48 h-48 rounded-xl"
                           />
@@ -445,7 +483,7 @@ function UsageStat({ label, value, sub }: { label: string, value: React.ReactNod
   );
 }
 
-function PricingCard({ plan, displayPrice, cycleLabel, delay, onSelect, isCurrent }: { plan: Plan, displayPrice: number, cycleLabel: string, delay: number, onSelect: () => void, isCurrent: boolean }) {
+function PricingCard({ plan, displayPrice, discountPercent, cycleLabel, delay, onSelect, isCurrent }: { plan: Plan, displayPrice: number, discountPercent: number, cycleLabel: string, delay: number, onSelect: () => void, isCurrent: boolean }) {
   const isFree = plan.price_vnd === 0;
   const isPlus = plan.code === 'plus';
 
@@ -458,6 +496,12 @@ function PricingCard({ plan, displayPrice, cycleLabel, delay, onSelect, isCurren
         isPlus ? 'border-indigo-600 shadow-xl shadow-indigo-100' : 'border-slate-100 hover:border-slate-200 shadow-sm'
       }`}
     >
+      {discountPercent > 0 && (
+        <div className="absolute top-8 right-8 bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-black">
+          TIẾT KIỆM {discountPercent}%
+        </div>
+      )}
+
       {isPlus && (
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
           Khuyên dùng

@@ -249,6 +249,7 @@ class UserTokenWallet(Base):
     daily_trial_claimed_at = Column(MSSQL_NVARCHAR(50), nullable=True)
     facebook_rewarded = Column(Boolean, default=False)
     x_rewarded = Column(Boolean, default=False)
+    expires_at = Column(MSSQL_NVARCHAR(50), nullable=True) # ISO format date
     created_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
 
 
@@ -263,7 +264,10 @@ class BillingPlan(Base):
     practice_cost = Column(Integer, nullable=False, default=10)
     test_start_cost = Column(Integer, nullable=False, default=35)
     daily_trial_bonus = Column(Integer, nullable=False, default=15)
-    price_vnd = Column(Integer, nullable=False, default=0)
+    price_vnd = Column(Integer, nullable=False, default=0) # Base 1 month price
+    price_3m = Column(Integer, nullable=True) # Optional fixed price for 3m
+    price_6m = Column(Integer, nullable=True) # Optional fixed price for 6m
+    price_12m = Column(Integer, nullable=True) # Optional fixed price for 12m
     bank_account_info = Column(NVARCHAR_MAX, nullable=True) # e.g. "Vietcombank - 123456789 - NGUYEN VAN A"
     updated_at = Column(MSSQL_NVARCHAR(50), server_default=func.now())
 
@@ -277,6 +281,7 @@ class SubscriptionRequest(Base):
     plan_code = Column(MSSQL_NVARCHAR(20), nullable=False)
     amount_vnd = Column(Integer, nullable=False)
     transfer_ref = Column(MSSQL_NVARCHAR(200), nullable=True)
+    duration_months = Column(Integer, default=1)
     note = Column(NVARCHAR_MAX, nullable=True)
     status = Column(MSSQL_NVARCHAR(20), default="pending", index=True)  # pending/approved/rejected
     reviewed_by = Column(String(255), ForeignKey("users.id"), nullable=True)

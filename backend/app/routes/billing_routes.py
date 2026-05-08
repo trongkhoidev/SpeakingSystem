@@ -33,6 +33,9 @@ def list_plans(db: Session = Depends(get_db)):
             "test_start_cost": plan["test_start_cost"],
             "daily_trial_bonus": plan["daily_trial_bonus"],
             "price_vnd": plan["price_vnd"],
+            "price_3m": plan.get("price_3m"),
+            "price_6m": plan.get("price_6m"),
+            "price_12m": plan.get("price_12m"),
         })
     return {"plans": plans}
 
@@ -89,6 +92,7 @@ def request_subscribe_plan(
     plan_code: str,
     transfer_ref: str | None = None,
     note: str | None = None,
+    duration_months: int = 1,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -97,11 +101,23 @@ def request_subscribe_plan(
         raise HTTPException(status_code=404, detail="Plan not found")
 
     plan = TokenService.get_effective_plan(db, plan_code)
+    
+    # Calculate amount based on duration and custom prices
+    if duration_months == 12:
+        amount = plan.get("price_12m") or (plan["price_vnd"] * 12)
+    elif duration_months == 6:
+        amount = plan.get("price_6m") or (plan["price_vnd"] * 6)
+    elif duration_months == 3:
+        amount = plan.get("price_3m") or (plan["price_vnd"] * 3)
+    else:
+        amount = plan["price_vnd"] * duration_months
+
     req = SubscriptionRequest(
         user_id=user.id,
         plan_code=plan_code,
-        amount_vnd=int(plan["price_vnd"]),
+        amount_vnd=int(amount),
         transfer_ref=transfer_ref,
+        duration_months=duration_months,
         note=note,
         status="pending",
     )
@@ -111,6 +127,7 @@ def request_subscribe_plan(
         "message": "Subscription request submitted and waiting for admin confirmation.",
         "request_id": req.id,
         "plan_code": plan_code,
-        "amount_vnd": int(plan["price_vnd"]),
+        "amount_vnd": int(amount),
+        "duration_months": duration_months,
         "status": "pending",
     }

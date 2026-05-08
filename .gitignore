@@ -50,6 +50,10 @@ tsc_out.txt
 scratch/
 backend/scratch/
 sample-speaking-mode/
+Assignment/
+*.pdf
+*.pptx
+*.docx
 
 # Agent & Internal Docs
 .agent/
